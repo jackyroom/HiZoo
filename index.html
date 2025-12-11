@@ -403,14 +403,16 @@
             overflow-y: auto;
             overflow-x: hidden;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(calc(260px * var(--card-scale)), 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(calc(260px * var(--card-scale)), calc(280px * var(--card-scale))));
             gap: 30px;
             align-content: start;
+            justify-content: start;
         }
 
         .card {
             background: rgba(18, 20, 24, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 100%;
             height: calc(320px * var(--card-scale));
             display: flex;
             flex-direction: column;
