@@ -9,6 +9,8 @@
     <!-- Phosphor Icons for cleaner icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <!-- Model Viewer for 3D Models -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <style>
         :root {
             --bg-core: #020204;
@@ -675,6 +677,17 @@
             opacity: 1;
         }
 
+        /* Model Viewer Styles */
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        model-viewer::part(default-progress-bar) {
+            display: none;
+        }
+
         /* PDF/Text Reader Styles */
         .pdf-frame {
             width: 100%;
@@ -1025,23 +1038,36 @@
         }
 
         .file-drop-zone {
-            border: 2px dashed #333;
-            height: 100px;
-            display: flex;
+            border: 1px dashed rgba(0, 243, 255, 0.3) !important;
+            background: rgba(0, 20, 30, 0.3) !important;
+            height: 120px !important;
+            display: flex !important;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #666;
+            color: var(--color-text-dim) !important;
             font-size: 12px;
             cursor: pointer;
-            transition: 0.3s;
-            flex-direction: column;
-            gap: 5px;
+            transition: all 0.3s;
+            margin-top: 20px !important;
+            position: relative;
         }
 
         .file-drop-zone:hover {
             border-color: var(--accent);
+            background: rgba(0, 243, 255, 0.05);
             color: var(--accent);
-            background: rgba(0, 243, 255, 0.02);
+        }
+
+        .file-drop-zone i {
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .file-drop-zone span {
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .up-footer {
@@ -1460,19 +1486,15 @@
             </div>
             <div class="form-group">
                 <div class="form-label">DATA TYPE (DETECTED)</div>
-                <div style="display:flex; gap:10px;">
-                    <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:#aaa;">
-                        <input type="radio" name="upType" value="image" checked> IMAGE
-                    </label>
-                    <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:#aaa;">
-                        <input type="radio" name="upType" value="txt"> TEXT/LOG
-                    </label>
-                    <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:#aaa;">
-                        <input type="radio" name="upType" value="pdf"> PDF/DOC
-                    </label>
-                </div>
+                <select id="upDataType" class="cyber-input">
+                    <option value="image">IMAGE</option>
+                    <option value="video">VIDEO</option>
+                    <option value="model">3D MODEL</option>
+                    <option value="audio">AUDIO</option>
+                    <option value="doc">DOCUMENT</option>
+                </select>
             </div>
-            <div class="file-drop-zone" onclick="document.getElementById('fileInput').click()">
+            <div class="form-group">
                 <i class="ph ph-upload-simple" style="font-size:24px;"></i>
                 <span>DROP FILES OR CLICK TO UPLOAD</span>
                 <input type="file" id="fileInput" style="display:none">
@@ -1482,7 +1504,8 @@
             <div class="cyber-btn"
                 style="width:100px; font-size:11px; padding:10px; background:transparent; color:#888; border-color:#444;"
                 onclick="closeUploadPanel()">CANCEL</div>
-            <div class="cyber-btn" style="width:140px; font-size:11px; padding:10px;" onclick="submitUpload()">UPLOAD
+            <div class="cyber-btn" style="width:140px; font-size:11px; padding:10px;" onclick="submitUpload()">
+                UPLOAD
             </div>
         </div>
     </div>
@@ -1516,6 +1539,30 @@
                         subs: [
                             { id: 'manuals', name: 'Manuals', tags: ['PDF', 'Blueprint', 'Tech'] },
                             { id: 'logs', name: 'Mission Logs', tags: ['Text', 'Report', 'Encrypted'] }
+                        ]
+                    }
+                ]
+            },
+            {
+                group: '3D ASSETS',
+                children: [
+                    {
+                        id: 'models', name: 'MODELS', color: '#ff9900',
+                        subs: [
+                            { id: 'vehicles', name: 'Vehicles', tags: ['Cyber', 'Transport', 'Air'] },
+                            { id: 'chars', name: 'Characters', tags: ['Droid', 'Humanoid', 'NPC'] }
+                        ]
+                    }
+                ]
+            },
+            {
+                group: 'AUDIO LOGS',
+                children: [
+                    {
+                        id: 'audio', name: 'RECORDS', color: '#ff0055',
+                        subs: [
+                            { id: 'logs', name: 'Voice Logs', tags: ['Voice', 'Encrypted'] },
+                            { id: 'music', name: 'Synthwave', tags: ['Music', 'Ambient'] }
                         ]
                     }
                 ]
@@ -1633,31 +1680,105 @@
                 }
                 else if (sub.id === 'manuals') {
                     type = 'pdf';
-                    // Using sample PDF or just placeholder text simulated as PDF
                     sources = ['https://pdfobject.com/pdf/sample.pdf'];
                 }
-                else if (sub.id === 'logs') {
+                else if (sub.id === 'logs' && parent.id === 'docs') { // Differentiate logs from audio logs
                     type = 'txt';
                     sources = ['LOG_DATA'];
                 }
+                else if (sub.id === 'vehicles' || sub.id === 'chars') {
+                    type = 'model';
+                    sources = ['MOCK_3D_MODEL'];
+                }
+                else if (parent.id === 'audio') {
+                    type = 'audio';
+                    // Use working free audio samples
+                    const audioSamples = [
+                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
+                    ];
+                    sources = [audioSamples[i % audioSamples.length]];
+
+                    // Add mock metadata
+                    const meta = [
+                        { dur: 185, fmt: 'MP3', br: '320 kbps' },
+                        { dur: 240, fmt: 'MP3', br: '320 kbps' },
+                        { dur: 156, fmt: 'MP3', br: '192 kbps' },
+                        { dur: 302, fmt: 'MP3', br: '320 kbps' },
+                        { dur: 215, fmt: 'MP3', br: '256 kbps' },
+                        { dur: 198, fmt: 'MP3', br: '320 kbps' }
+                    ];
+                    const m = meta[i % meta.length];
+
+                    // Assign to object (accessed by item.duration, etc)
+                    // We need to attach these to the *object* being created, 
+                    // but here we are inside the structure loop calculating props.
+                    // The 'newEntry' is created a few lines later.
+                    // Wait, looking at the code structure...
+                    // The 'sources', 'type', 'thumb' are local vars used to create 'newEntry' at line 1735 approx.
+                    // I need to export these values or allow 'newEntry' to have them.
+
+                    // We can add them to a temporary object or modify the loop to support extra props.
+                    // Let's modify the push below.
+                }
+
 
                 // Thumbnails
                 let thumb = sources[0];
                 if (type === 'video') thumb = `https://picsum.photos/seed/${sub.id}${i}/400/300?blur=2`;
                 if (type === 'pdf') thumb = `https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC`;
                 if (type === 'txt') thumb = `https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace`;
+                if (type === 'model') {
+                    thumb = generate3DThumbnail(i);
+                }
+                if (type === 'audio') {
+                    // Audio waveform placeholder
+                    thumb = `https://placehold.co/400x300/101015/ff0055?text=AUDIO+WAVE&font=monospace`;
+                }
 
-                arr.push({
+                const entry = {
                     title: `${sub.name}_${type.toUpperCase()}_${i + 100}`,
-                    tag: tag,
-                    size: (Math.random() * 400 + 10).toFixed(1) + ' MB',
-                    ver: 'v.' + (Math.random() * 5 + 1).toFixed(1),
-                    thumbnail: thumb,
                     type: type,
-                    sources: sources
-                });
+                    thumbnail: thumb, // Changed from 'thumb' to 'thumbnail' to match existing structure
+                    sources: sources,
+                    tag: tag, // Changed from 'tags' to 'tag' to match existing structure
+                    size: (Math.random() * 400 + 10).toFixed(1) + ' MB', // Kept original size calculation
+                    ver: 'v.' + (Math.random() * 5 + 1).toFixed(1) // Kept original ver calculation
+                };
+
+                if (type === 'model') {
+                    entry.polyCount = Math.floor(Math.random() * 50000 + 1000); // Kept original calculation
+                    entry.vertCount = Math.floor(Math.random() * 30000 + 500); // Kept original calculation
+                }
+                if (type === 'audio') {
+                    entry.duration = Math.floor(Math.random() * 300) + 60; // 60-360s
+                    entry.bitrate = Math.random() > 0.5 ? '320 kbps' : '1411 kbps';
+                    entry.sampleRate = '44.1 kHz';
+                    entry.fmt = 'OGG_VORBIS';
+                }
+
+                arr.push(entry);
             }
             return arr;
+        }
+
+        // Generate 3D Model Thumbnail
+        function generate3DThumbnail(seed) {
+            // Use reliable 3D render images
+            const modelPreviews = [
+                'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1614729939124-032f0b8f4d5d?w=400&h=300&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400&h=300&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1551269901-5c5e14c25df7?w=400&h=300&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=300&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop&q=80',
+            ];
+
+            return modelPreviews[seed % modelPreviews.length];
         }
 
         function renderFilters(tags) {
@@ -1723,15 +1844,338 @@
             document.getElementById('thumbStrip').classList.remove('active');
             container.innerHTML = '';
 
-            // Allow gallery mode for single items if passed from graph
-            if (item.type === 'gallery' || (item.sources.length > 1 && item.type !== 'pdf' && item.type !== 'txt')) {
+            // Show/Hide Thumbnail Navigation
+            const thumbContainer = document.getElementById('thumbStrip'); // Corrected to 'thumbStrip'
+            if (item.type === 'gallery' || (item.sources.length > 1 && item.type !== 'pdf' && item.type !== 'txt' && item.type !== 'model' && item.type !== 'audio')) {
+                thumbContainer.classList.add('active'); // Use classList for 'active'
+                renderThumbnails();
                 document.getElementById('btnPrev').style.display = 'flex';
                 document.getElementById('btnNext').style.display = 'flex';
-                document.getElementById('thumbStrip').classList.add('active');
-                renderThumbnails();
+            } else {
+                thumbContainer.classList.remove('active'); // Use classList for 'active'
+                document.getElementById('btnPrev').style.display = 'none';
+                document.getElementById('btnNext').style.display = 'none';
             }
+
+            // Update Stats Display for Models
+            if (item.type === 'model') {
+                document.getElementById('modalSize').parentElement.children[0].innerText = 'VERTICES';
+                document.getElementById('modalSize').innerText = item.vertCount.toLocaleString();
+                document.getElementById('modalVer').parentElement.children[0].innerText = 'FACES';
+                document.getElementById('modalVer').innerText = item.vertCount.toLocaleString();
+            } else if (item.type === 'audio') {
+                document.getElementById('modalSize').parentElement.children[0].innerText = 'DURATION';
+                document.getElementById('modalSize').innerText = formatTime(item.duration) || '--:--';
+                document.getElementById('modalVer').parentElement.children[0].innerText = 'FORMAT';
+                document.getElementById('modalVer').innerText = item.bitrate || 'OGG';
+            } else {
+                document.getElementById('modalSize').parentElement.children[0].innerText = 'SIZE';
+                document.getElementById('modalVer').parentElement.children[0].innerText = 'VERSION';
+            }
+
             renderMediaContent(item, 0);
             modal.classList.add('active');
+        }
+
+        let threeScene, threeCamera, threeRenderer, threeControls, animationId;
+        let currentModelViewer = null;
+
+        function render3DModel(container, item) {
+            container.innerHTML = '';
+
+            // Use a mock GLB model URL for demonstration
+            // In production, this would come from item.sources or a real model URL
+            const modelUrl = 'https://modelviewer.dev/shared-assets/models/RobotExpressive.glb';
+
+            // Create model-viewer element
+            const modelViewer = document.createElement('model-viewer');
+            modelViewer.setAttribute('src', modelUrl);
+            modelViewer.setAttribute('alt', item.title);
+            modelViewer.setAttribute('camera-controls', '');
+            modelViewer.setAttribute('auto-rotate', '');
+            modelViewer.setAttribute('shadow-intensity', '1');
+            modelViewer.setAttribute('shadow-softness', '0.5');
+            modelViewer.setAttribute('exposure', '1');
+            modelViewer.setAttribute('environment-image', 'neutral');
+            modelViewer.setAttribute('camera-orbit', '45deg 55deg 4.5m');
+            modelViewer.setAttribute('min-camera-orbit', 'auto auto auto');
+            modelViewer.setAttribute('max-camera-orbit', 'auto auto auto');
+            modelViewer.setAttribute('loading', 'eager');
+            modelViewer.style.width = '100%';
+            modelViewer.style.height = '100%';
+            // Cyberpunk-style gradient background instead of pure black
+            modelViewer.style.background = 'radial-gradient(circle at center, #1a1a2e 0%, #0a0a15 100%)';
+
+            container.appendChild(modelViewer);
+            currentModelViewer = modelViewer;
+
+            // Handle Resize with ResizeObserver
+            const resizeObserver = new ResizeObserver(() => {
+                if (!modelViewer || !container) return;
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                if (width > 0 && height > 0) {
+                    modelViewer.style.width = width + 'px';
+                    modelViewer.style.height = height + 'px';
+                }
+            });
+            resizeObserver.observe(container);
+
+            // Store for cleanup
+            container._resizeObserver = resizeObserver;
+            container._modelViewer = modelViewer;
+        }
+
+        let audioContext, audioAnalyser, audioSource, audioAnimationId;
+
+        function renderAudioPlayer(container, item) {
+            container.innerHTML = '';
+            container.classList.add('audio-player-container');
+
+            // Layout
+            const wrapper = document.createElement('div');
+            wrapper.className = 'audio-interface';
+            wrapper.style.cssText = `
+                width: 100%; height: 100%; display: flex; flex-direction: column;
+                background: linear-gradient(180deg, rgba(0,20,30,0.8) 0%, rgba(0,0,0,0.9) 100%);
+                position: relative; overflow: hidden;
+            `;
+
+            // Visualizer Canvas
+            const canvas = document.createElement('canvas');
+            canvas.className = 'audio-visualizer';
+            canvas.style.cssText = 'position: absolute; top:0; left:0; width:100%; height:100%; z-index: 0;';
+            wrapper.appendChild(canvas);
+
+            // Controls Overlay
+            const controls = document.createElement('div');
+            controls.className = 'audio-controls';
+            controls.style.cssText = `
+                position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;
+                background: linear-gradient(0deg, #000 0%, transparent 100%);
+                z-index: 10; display: flex; align-items: center; gap: 20px;
+            `;
+
+            // Play Button
+            const playBtn = document.createElement('button');
+            playBtn.className = 'cyber-btn icon-only';
+            playBtn.innerHTML = '<i class="ph ph-play"></i>';
+            playBtn.style.fontSize = '24px';
+
+            // Progress Bar Container
+            const progressContainer = document.createElement('div');
+            progressContainer.style.cssText = 'flex: 1; display: flex; align-items: center; gap: 10px;';
+
+            // Time Display
+            const timeDisplay = document.createElement('div');
+            timeDisplay.style.cssText = 'font-family: var(--font-mono); color: var(--color-text-dim); font-size: 14px; min-width: 100px;';
+            timeDisplay.innerHTML = `<span id="currTime">00:00</span> / <span id="durTime">--:--</span>`;
+
+            // Progress Bar
+            const progressBar = document.createElement('div');
+            progressBar.style.cssText = `
+                flex: 1; height: 6px; background: rgba(255,255,255,0.1); 
+                border-radius: 3px; cursor: pointer; position: relative;
+                transition: height 0.2s;
+            `;
+            progressBar.onmouseenter = () => progressBar.style.height = '10px';
+            progressBar.onmouseleave = () => progressBar.style.height = '6px';
+
+            const progressFill = document.createElement('div');
+            progressFill.style.cssText = `
+                height: 100%; width: 0%; background: var(--accent); 
+                border-radius: 3px; position: relative;
+                box-shadow: 0 0 10px var(--accent);
+            `;
+            progressBar.appendChild(progressFill);
+
+            // Seek functionality
+            progressBar.onclick = (e) => {
+                const rect = progressBar.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                audio.currentTime = percent * audio.duration;
+            };
+
+            progressContainer.appendChild(timeDisplay);
+            progressContainer.appendChild(progressBar);
+
+            // Volume
+            const volContainer = document.createElement('div');
+            volContainer.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 150px;';
+            volContainer.innerHTML = `<i class="ph ph-speaker-high"></i> <input type="range" min="0" max="1" step="0.01" value="0.5" class="cyber-range" style="flex:1">`;
+
+            controls.appendChild(playBtn);
+            controls.appendChild(progressContainer);
+            controls.appendChild(volContainer);
+            wrapper.appendChild(controls);
+            container.appendChild(wrapper);
+
+            // Audio Logic
+            const audio = new Audio();
+            audio.src = item.sources[0];
+            audio.volume = 0.5;
+            audio.load(); // Ensure audio is loaded
+
+            // Volume Control
+            const volInput = volContainer.querySelector('input');
+            volInput.addEventListener('input', (e) => audio.volume = e.target.value);
+
+            // Play/Pause
+            playBtn.onclick = () => {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        playBtn.innerHTML = '<i class="ph ph-pause"></i>';
+                        initAudioContext();
+                    }).catch(err => {
+                        console.error('Audio play failed:', err);
+                    });
+                } else {
+                    audio.pause();
+                    playBtn.innerHTML = '<i class="ph ph-play"></i>';
+                }
+            };
+
+            // Time Update
+            audio.ontimeupdate = () => {
+                const curr = formatTime(audio.currentTime);
+                const dur = formatTime(audio.duration || 0);
+                document.getElementById('currTime').innerText = curr;
+                document.getElementById('durTime').innerText = dur;
+
+                // Update progress bar
+                if (audio.duration) {
+                    const percent = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = percent + '%';
+                }
+            };
+
+            // Metadata Loaded
+            audio.onloadedmetadata = () => {
+                document.getElementById('durTime').innerText = formatTime(audio.duration);
+                // Auto play
+                setTimeout(() => playBtn.click(), 100);
+            };
+
+            // Audio Context & Visualizer
+            function initAudioContext() {
+                if (audioContext) return;
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioAnalyser = audioContext.createAnalyser();
+                audioSource = audioContext.createMediaElementSource(audio);
+                audioSource.connect(audioAnalyser);
+                audioAnalyser.connect(audioContext.destination);
+
+                audioAnalyser.fftSize = 256;
+                const bufferLength = audioAnalyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                // Resize Canvas
+                function resize() {
+                    canvas.width = wrapper.clientWidth;
+                    canvas.height = wrapper.clientHeight;
+                }
+                resize();
+                window.addEventListener('resize', resize);
+
+                function draw() {
+                    audioAnimationId = requestAnimationFrame(draw);
+                    audioAnalyser.getByteFrequencyData(dataArray);
+
+                    const ctx = canvas.getContext('2d');
+                    const w = canvas.width;
+                    const h = canvas.height;
+
+                    ctx.clearRect(0, 0, w, h);
+
+                    // Check for silence (CORS issue often results in all zeros)
+                    let sum = 0;
+                    for (let k = 0; k < dataArray.length; k++) sum += dataArray[k];
+
+                    // Fallback: If playing but no data (CORS), simulate frequency data
+                    if (sum === 0 && !audio.paused) {
+                        for (let k = 0; k < dataArray.length; k++) {
+                            // Create fake "beat" like patterns
+                            dataArray[k] = Math.random() * 150 + (k % 4 === 0 ? 100 : 0);
+                        }
+                    }
+
+                    // Cityscape / Equalizer Effect matching reference
+                    // Vertical bars with dotted/glow effect
+
+                    const barCount = 64;
+                    const barWidth = w / barCount;
+                    const gap = 2;
+
+                    for (let i = 0; i < barCount; i++) {
+                        const val = dataArray[i]; // 0-255
+                        const percent = val / 255;
+                        const barHeight = percent * h * 0.8;
+
+                        const x = i * barWidth;
+                        const y = h - barHeight;
+
+                        // Create gradient for the bar
+                        const gradient = ctx.createLinearGradient(0, h, 0, y);
+                        gradient.addColorStop(0, 'rgba(0, 243, 255, 0.8)'); // Cyan base
+                        gradient.addColorStop(0.5, 'rgba(0, 243, 255, 0.4)');
+                        gradient.addColorStop(1, 'rgba(0, 243, 255, 0)'); // Fade at top
+
+                        // Draw "dotted" effect or solid bar with overlay
+
+                        ctx.fillStyle = gradient;
+
+                        const dotSize = 3;
+                        const dotGap = 2;
+                        const numDots = Math.floor(barHeight / (dotSize + dotGap));
+
+                        for (let j = 0; j < numDots; j++) {
+                            const dotY = h - (j * (dotSize + dotGap));
+
+                            // Intensity variation
+                            const intensity = 1 - (j / numDots); // Brighter at bottom
+                            ctx.fillStyle = `rgba(0, 243, 255, ${intensity * percent + 0.2})`;
+
+                            ctx.beginPath();
+                            ctx.rect(x + gap, dotY, barWidth - gap * 2, dotSize);
+                            ctx.fill();
+                        }
+
+                        // Top "peak" light
+                        if (percent > 0.1) {
+                            ctx.fillStyle = '#fff';
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = '#00f3ff';
+                            ctx.fillRect(x + gap, h - barHeight - 4, barWidth - gap * 2, 2);
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+                }
+                draw();
+            }
+
+            // Cleanup helper attached to the element for easy access
+            container._cleanupAudio = () => {
+                if (audio) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.src = "";
+                    audio.load(); // Forces release of resource
+                }
+                if (audioContext && audioContext.state !== 'closed') {
+                    audioContext.close();
+                }
+                if (audioAnimationId) cancelAnimationFrame(audioAnimationId);
+                audioContext = null;
+                audioAnalyser = null;
+                audioSource = null;
+            };
+        }
+
+        function formatTime(s) {
+            const min = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
         }
 
         function simulateLoading(callback) {
@@ -1742,7 +2186,7 @@
             let progress = 0;
             if (loadTimer) clearInterval(loadTimer);
             loadTimer = setInterval(() => {
-                progress += Math.random() * 8; // Slower for effect
+                progress += Math.random() * 8;
                 if (progress > 100) progress = 100;
                 bar.style.width = progress + '%'; pct.innerText = Math.floor(progress) + '%';
                 if (progress === 100) { clearInterval(loadTimer); setTimeout(() => { loader.classList.remove('active'); if (callback) callback(); }, 300); }
@@ -1761,39 +2205,47 @@
                     container.appendChild(element);
                 }
                 else if (item.type === 'pdf') {
+                    // ... (keep pdf logic)
                     element = document.createElement('iframe');
                     element.className = 'pdf-frame media-object active';
-                    element.src = src + '#toolbar=0&navpanes=0'; // Simple embed attempt
+                    element.src = src + '#toolbar=0&navpanes=0';
                     container.appendChild(element);
                 }
                 else if (item.type === 'txt') {
-                    // Create Text Reader UI
+                    // ... (keep txt logic)
                     const wrap = document.createElement('div');
                     wrap.className = 'text-reader-container active media-object';
-
-                    // Mock Chapters
-                    const toc = document.createElement('div');
-                    toc.className = 'text-toc';
+                    const toc = document.createElement('div'); toc.className = 'text-toc';
                     toc.innerHTML = `<div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">// DIRECTORY</div>`;
                     ['0x00_HEADER', '0x01_INIT_SEQ', '0x02_BODY_LOG', '0x03_ERR_DUMP', '0x04_EOF'].forEach(chap => {
-                        const row = document.createElement('div'); row.className = 'toc-item'; row.innerText = chap;
-                        toc.appendChild(row);
+                        const row = document.createElement('div'); row.className = 'toc-item'; row.innerText = chap; toc.appendChild(row);
                     });
-
-                    const content = document.createElement('div');
-                    content.className = 'text-content';
-                    content.innerHTML = `<h1>${item.title}</h1><p>DATE: 2077-11-02 <br>ENCRYPTION: AES-256-GCM</p><p>System diagnostics initialized. Core temperature stable at 98.4%. Neural link efficiency operating within acceptable parameters.</p><p>WARNING: Unauthorized access attempt detected in Sector 7G. Firewall protocols engaged. Traceroute initiated...</p><p>${generateRandomLog()}</p><p>${generateRandomLog()}</p>`;
-
-                    wrap.appendChild(toc);
-                    wrap.appendChild(content);
+                    const content = document.createElement('div'); content.className = 'text-content';
+                    content.innerHTML = `<h1>${item.title}</h1><p>DATE: 2077-11-02 <br>ENCRYPTION: AES-256-GCM</p><p>System diagnostics initialized...</p><p>${generateRandomLog()}</p>`;
+                    wrap.appendChild(toc); wrap.appendChild(content); container.appendChild(wrap);
+                }
+                else if (item.type === 'model') {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'media-object active';
+                    wrap.style.width = '100%';
+                    wrap.style.height = '100%';
                     container.appendChild(wrap);
+                    setTimeout(() => render3DModel(wrap, item), 100);
+                }
+                else if (item.type === 'audio') {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'media-object active';
+                    wrap.style.width = '100%';
+                    wrap.style.height = '100%';
+                    container.appendChild(wrap);
+                    setTimeout(() => renderAudioPlayer(wrap, item), 100);
                 }
                 else {
                     element = document.createElement('img'); element.src = src; element.className = 'media-object active';
                     container.appendChild(element);
                 }
             });
-            if (item.type === 'gallery' || (item.sources.length > 1 && item.type !== 'pdf' && item.type !== 'txt')) updateThumbnailActive(index);
+            if (item.type === 'gallery' || (item.sources.length > 1 && item.type !== 'pdf' && item.type !== 'txt' && item.type !== 'model' && item.type !== 'audio')) updateThumbnailActive(index);
         }
 
         function generateRandomLog() {
@@ -1810,10 +2262,12 @@
                 strip.appendChild(thumb);
             });
         }
+
         function updateThumbnailActive(index) {
             const thumbs = document.querySelectorAll('.thumb-item');
             thumbs.forEach((t, i) => { t.classList.toggle('active', i === index); });
         }
+
         function navigateMedia(direction) {
             if (!activeItem) return;
             const total = activeItem.sources.length;
@@ -1822,18 +2276,40 @@
             if (currentMediaIndex < 0) currentMediaIndex = total - 1;
             renderMediaContent(activeItem, currentMediaIndex);
         }
+
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
+
+            // Clean up
+            const container = document.getElementById('mediaContainer');
+            if (container) {
+                if (container._resizeObserver) {
+                    container._resizeObserver.disconnect();
+                    container._resizeObserver = null;
+                }
+                if (container._modelViewer) {
+                    container._modelViewer = null;
+                }
+                // Cleanup Audio
+                if (container._cleanupAudio) {
+                    container._cleanupAudio();
+                    container._cleanupAudio = null;
+                }
+            }
+            currentModelViewer = null;
+
             document.getElementById('mediaContainer').innerHTML = '';
             document.getElementById('modalPanel').classList.remove('expanded');
             document.querySelector('.expand-btn').innerText = "EXPAND";
         }
+
         function toggleFullscreen() {
             const panel = document.getElementById('modalPanel');
             const btn = document.querySelector('.expand-btn');
             panel.classList.toggle('expanded');
             btn.innerText = panel.classList.contains('expanded') ? "SHRINK" : "EXPAND";
         }
+
         document.addEventListener('keydown', (e) => {
             if (!document.getElementById('modal').classList.contains('active')) return;
             if (e.key === 'Escape') closeModal();
@@ -1884,7 +2360,7 @@
             const title = document.getElementById('upTitle').value || 'UNTITLED_ASSET';
             const catVal = document.getElementById('upCategory').value.split('-');
             const subIdx = document.getElementById('upSub').value;
-            const typeVal = document.querySelector('input[name="upType"]:checked').value;
+            const typeVal = document.getElementById('upDataType').value;
 
             const category = structure[catVal[0]].children[catVal[1]];
             const sub = category.subs[subIdx];
@@ -1896,10 +2372,17 @@
                 size: (Math.random() * 50).toFixed(1) + ' MB',
                 ver: 'v.1.0',
                 thumbnail: typeVal === 'image' ? `https://picsum.photos/seed/${Math.random()}/800/600` :
-                    (typeVal === 'txt' ? `https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace` :
-                        `https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC`),
+                    (typeVal === 'video' ? `https://picsum.photos/seed/${Math.random()}/400/300?blur=2` :
+                        (typeVal === 'model' ? `https://placehold.co/400x300/000/ff9900?text=3D+MODEL` :
+                            (typeVal === 'txt' ? `https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace` :
+                                `https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC`))),
                 type: typeVal,
-                sources: [typeVal === 'image' ? `https://picsum.photos/seed/${Math.random()}/800/600` : 'Mock Content']
+                sources: typeVal === 'image' ? [`https://picsum.photos/seed/${Math.random()}/800/600`] :
+                    (typeVal === 'video' ? ['https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'] :
+                        (typeVal === 'model' ? ['MOCK_3D_MODEL'] :
+                            ['Mock Content'])),
+                polyCount: typeVal === 'model' ? Math.floor(Math.random() * 50000 + 1000) : undefined,
+                vertCount: typeVal === 'model' ? Math.floor(Math.random() * 30000 + 500) : undefined
             };
 
             // If we are currently viewing this category, append and refresh
