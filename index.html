@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER VAULT | 最终修复版</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-core: #050508;
+            --bg-panel: rgba(16, 18, 23, 0.95);
+            --border-base: rgba(255,255,255,0.12);
+            --accent: #00f3ff; /* 动态变量 */
+            
+            --c-cyan: #00f3ff;
+            --c-orange: #ffaa00;
+            --c-pink: #ff0055;
+            --c-green: #00ff9d;
+            
+            --font-main: 'JetBrains Mono', monospace;
+            --card-scale: 1; /* 卡片等比缩放系数 */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background-color: var(--bg-core);
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #e0e0e0;
+            font-family: var(--font-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        .scanline-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.15) 50%);
+            background-size: 100% 4px; pointer-events: none; z-index: 2; opacity: 0.5;
+        }
+
+        /* --- 1. 侧边栏 --- */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-panel);
+            backdrop-filter: blur(15px);
+            border-right: 1px solid var(--border-base);
+            display: flex; flex-direction: column; z-index: 10;
+        }
+
+        .logo {
+            padding: 25px 24px; font-size: 18px; font-weight: 800; letter-spacing: 2px;
+            border-bottom: 1px solid var(--border-base); color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .logo span { color: var(--accent); }
+
+        .nav-list { flex: 1; overflow-y: auto; padding: 20px 0; }
+        
+        .nav-group-header {
+            padding: 15px 24px 8px 24px; font-size: 11px; color: #555; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .nav-parent { cursor: pointer; transition: 0.2s; }
+        
+        .nav-parent-header {
+            padding: 12px 24px; color: #aaa; font-size: 13px; font-weight: 600;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 3px solid transparent; transition: 0.2s;
+        }
+        .nav-parent-header:hover { color: #fff; background: rgba(255,255,255,0.03); }
+        
+        /* 父级选中态 */
+        .nav-parent.active-parent .nav-parent-header {
+            color: #fff; border-left-color: var(--accent);
+            background: linear-gradient(90deg, rgba(255,255,255,0.05), transparent);
+        }
+        
+        .nav-arrow { font-size: 10px; transition: transform 0.3s; opacity: 0.5; }
+        .nav-parent.expanded .nav-arrow { transform: rotate(90deg); opacity: 1; color: var(--accent); }
+
+        .nav-sub-list { display: none; background: rgba(0,0,0,0.2); overflow: hidden; }
+        .nav-parent.expanded .nav-sub-list { display: block; animation: slideDown 0.2s ease; }
+
+        .nav-sub-item {
+            padding: 10px 24px 10px 45px; font-size: 12px; color: #777; cursor: pointer;
+            position: relative; transition: 0.2s; display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-sub-item:hover { color: #ddd; }
+        
+        .nav-sub-item.active {
+            color: var(--accent); background: rgba(255,255,255,0.02); font-weight: 600;
+        }
+        .nav-sub-item.active::before {
+            content: ''; position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
+            width: 4px; height: 4px; background: var(--accent); border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        /* --- 2. 主区域 --- */
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; }
+
+        /* 顶部 Header (增加搜索/用户) */
+        .header {
+            height: 60px; border-bottom: 1px solid var(--border-base);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; background: rgba(0,0,0,0.4);
+        }
+        .page-title { font-size: 18px; font-weight: 800; letter-spacing: 1px; color: var(--accent); }
+
+        /* 全局功能区 */
+        .global-actions { display: flex; align-items: center; gap: 20px; }
+        
+        .search-box {
+            position: relative; display: flex; align-items: center;
+            background: rgba(0,0,0,0.3); border: 1px solid var(--border-base);
+            padding: 6px 12px; border-radius: 4px; width: 240px;
+        }
+        .search-box input {
+            background: transparent; border: none; color: #fff; font-family: var(--font-main);
+            font-size: 12px; width: 100%; outline: none;
+        }
+        .search-box svg { width: 14px; height: 14px; fill: #666; margin-right: 8px; }
+        .search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); }
+
+        .icon-btn {
+            position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #888; border: 1px solid transparent; border-radius: 4px; transition: 0.2s;
+        }
+        .icon-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
+        .icon-btn.has-dot::after {
+            content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px;
+            background: var(--c-pink); border-radius: 50%; box-shadow: 0 0 5px var(--c-pink);
+        }
+
+        .user-avatar {
+            width: 32px; height: 32px; background: #333; border: 1px solid var(--border-base);
+            display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            height: 50px; border-bottom: 1px solid var(--border-base);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; background: rgba(20,20,25,0.6);
+        }
+        .filter-group { display: flex; gap: 8px; align-items: center; }
+        
+        .filter-chip {
+            font-size: 11px; padding: 4px 12px; border: 1px solid var(--border-base);
+            border-radius: 2px; cursor: pointer; color: #888; transition: 0.2s;
+            background: rgba(0,0,0,0.3);
+        }
+        .filter-chip:hover { border-color: #fff; color: #fff; }
+        .filter-chip.active {
+            background: var(--accent); color: #000; border-color: var(--accent); font-weight: 800;
+        }
+
+        .sort-select {
+            background: #000; color: var(--accent); border: 1px solid var(--border-base);
+            padding: 4px 10px; font-family: var(--font-main); font-size: 12px; cursor: pointer; outline: none;
+        }
+
+        .zoom-control { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #666; }
+        input[type=range] {
+            -webkit-appearance: none; appearance: none; background: transparent; width: 100px;
+        }
+        input[type=range]::-webkit-slider-runnable-track { height: 2px; background: #444; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 12px; width: 6px;
+            background: var(--accent); margin-top: -5px; cursor: pointer;
+        }
+
+        /* --- 3. 网格 & 卡片 --- */
+        .grid-content {
+            flex: 1; padding: 30px; overflow-y: auto;
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(calc(220px * var(--card-scale)), 1fr));
+            gap: calc(20px * var(--card-scale)); 
+            align-content: start;
+        }
+
+        .card {
+            background: rgba(20,20,25,0.6); border: 1px solid var(--border-base); border-radius: 4px; 
+            position: relative; transition: all 0.3s ease; cursor: pointer;
+            display: flex; flex-direction: column; overflow: hidden;
+            height: calc(280px * var(--card-scale)); /* 保证网格卡片统一高度并等比缩放 */
+        }
+        
+        .card:hover {
+            transform: translateY(-5px); border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+        .card::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+            background: var(--accent); transform: scaleX(0); transition: 0.3s;
+            transform-origin: left; box-shadow: 0 0 10px var(--accent);
+        }
+        .card:hover::after { transform: scaleX(1); }
+
+        .card-cover {
+            aspect-ratio: 16/10; width: 100%; position: relative; overflow: hidden;
+            background: #111; border-bottom: 1px solid var(--border-base);
+        }
+        .card-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0.8; }
+        .card:hover .card-img { transform: scale(1.05); opacity: 1; filter: contrast(1.1); }
+
+        .multi-badge {
+            position: absolute; top: 6px; right: 6px;
+            background: rgba(0,0,0,0.8); color: #fff; font-size: 10px;
+            padding: 2px 6px; border: 1px solid rgba(255,255,255,0.3); z-index: 5;
+        }
+
+        .card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        .card-tags { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; max-height: calc(32px * var(--card-scale)); overflow: hidden; }
+        .tag-pill {
+            font-size: 9px; padding: 1px 5px; border: 1px solid var(--border-base);
+            color: #888; border-radius: 2px; text-transform: uppercase;
+        }
+        .card-title {
+            font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 6px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .card-meta {
+            margin-top: auto; display: flex; justify-content: space-between;
+            font-size: 10px; color: #666; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;
+        }
+        .meta-val b { color: var(--accent); margin-right: 3px; }
+
+        /* --- 4. 模态框 --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px);
+            z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-panel {
+            width: 900px; height: 600px; background: #0b0c10;
+            border: 1px solid var(--accent); box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            display: flex; transform: scale(0.95); transition: 0.3s; overflow: hidden;
+        }
+        .modal-panel.fullscreen {
+            width: 96vw; height: 94vh; max-width: 1600px; max-height: 1000px;
+        }
+        .modal-panel.fullscreen .modal-gallery { width: 68%; }
+        .modal-panel.fullscreen .modal-info { padding: 34px; font-size: 1.05em; }
+        .modal-panel.fullscreen #modalTitle { font-size: 30px !important; }
+        .modal-panel.fullscreen #modalTopTag { font-size: 13px !important; }
+        .modal-panel.fullscreen .thumb-strip { height: 90px; }
+        .modal-panel.fullscreen .thumb-item { width: 72px; }
+        .modal-panel.fullscreen button { padding: 14px; font-size: 14px; }
+        .modal-panel.fullscreen .main-view { padding: 0; }
+        .modal-overlay.active .modal-panel { transform: scale(1); }
+
+        .modal-gallery { width: 60%; background: #000; display: flex; flex-direction: column; border-right: 1px solid #333; }
+        .main-view { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .main-view img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .thumb-strip { height: 80px; background: #080808; border-top: 1px solid #333; display: flex; gap: 8px; padding: 10px; overflow-x: auto; }
+        .thumb-item { width: 60px; height: 100%; border: 1px solid #444; opacity: 0.5; cursor: pointer; }
+        .thumb-item.selected { opacity: 1; border: 2px solid var(--accent); }
+        .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+        .modal-info { width: 40%; padding: 30px; background: #111; overflow-y: auto; display: flex; flex-direction: column; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #fff; z-index: 10; }
+        .fullscreen-btn {
+            position: absolute; top: 12px; right: 48px; font-size: 14px; cursor: pointer; color: #aaa;
+            padding: 6px 10px; border: 1px solid var(--border-base); background: rgba(255,255,255,0.04);
+            z-index: 10; transition: 0.2s;
+        }
+        .fullscreen-btn:hover { color: #fff; border-color: var(--accent); }
+
+        @keyframes slideDown { from { height: 0; opacity: 0; } to { height: auto; opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo"><span>❖</span> CYBER VAULT</div>
+        <div class="nav-list" id="navList">
+            </div>
+    </aside>
+
+    <main class="main">
+        <header class="header">
+            <div class="page-title" id="pageTitle">DASHBOARD</div>
+            
+            <div class="global-actions">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24"><path d="M21.71 20.29l-5.01-5.01C17.54 13.68 18 11.91 18 10c0-4.41-3.59-8-8-8S2 5.59 2 10s3.59 8 8 8c1.91 0 3.68-.46 5.28-1.3l5.01 5.01c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41zM10 16c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+                    <input type="text" placeholder="Search assets...">
+                </div>
+                
+                <div class="icon-btn has-dot" title="Notifications">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </div>
+                
+                <div class="user-avatar" title="User Profile">ID</div>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <div class="filter-group" id="filterContainer"></div>
+            <div class="filter-group">
+                <select class="sort-select" id="sortSelect">
+                    <option value="new">NEWEST</option>
+                    <option value="size">SIZE</option>
+                    <option value="name">NAME</option>
+                </select>
+                <div style="width:1px; height:20px; background:var(--border-base); margin:0 10px;"></div>
+                <div class="zoom-control">
+                    <span>SIZE</span>
+                    <input type="range" id="zoomSlider" min="0.85" max="1.35" value="1" step="0.05">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-content" id="grid">
+            </div>
+    </main>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-panel">
+            <div class="fullscreen-btn" onclick="toggleFullscreen()">全屏</div>
+            <div class="close-btn" onclick="closeModal()">×</div>
+            <div class="modal-gallery">
+                <div class="main-view">
+                    <div class="scanline-overlay"></div>
+                    <img id="mainImg" src="">
+                </div>
+                <div class="thumb-strip" id="thumbStrip"></div>
+            </div>
+            <div class="modal-info">
+                <div style="color:var(--accent); font-size:12px; margin-bottom:10px;" id="modalTopTag">TYPE</div>
+                <div style="font-size:24px; font-weight:800; margin-bottom:20px; line-height:1.2; color:#fff" id="modalTitle">Title</div>
+                <p style="color:#888; font-size:13px; line-height:1.6; border-left:2px solid var(--accent); padding-left:10px;">
+                    Integrity verified. Full source files included.<br>
+                    Classification: High Priority Asset.
+                </p>
+                <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;" id="modalStats"></div>
+                <button style="margin-top:auto; padding:12px; background:var(--accent); color:#000; font-weight:800; border:none; cursor:pointer;">DOWNLOAD</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const structure = [
+            {
+                group: 'ASSETS LIBRARY',
+                children: [
+                    { 
+                        id: 'env', name: 'ENVIRONMENT', color: 'var(--c-cyan)', type: 'VISUAL',
+                        subs: [
+                            { id: 'env_nature', name: 'Nature', tags: ['Forest', 'Water'] },
+                            { id: 'env_scifi', name: 'Sci-Fi', tags: ['Cyberpunk', 'Space'] },
+                            { id: 'env_urban', name: 'Urban', tags: ['City', 'Street'] }
+                        ]
+                    },
+                    { 
+                        id: 'char', name: 'CHARACTERS', color: 'var(--c-cyan)', type: 'VISUAL',
+                        subs: [
+                            { id: 'char_human', name: 'Humanoid', tags: ['NPC', 'Hero'] },
+                            { id: 'char_mech', name: 'Mecha', tags: ['Robot'] }
+                        ]
+                    }
+                ]
+            },
+            {
+                group: 'DEVELOPMENT',
+                children: [
+                    { 
+                        id: 'code', name: 'BLUEPRINTS', color: 'var(--c-orange)', type: 'CODE',
+                        subs: [
+                            { id: 'bp_logic', name: 'Logic', tags: ['Core'] },
+                            { id: 'bp_ai', name: 'AI', tags: ['BT'] }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let currentParent = structure[0].children[0];
+        let currentAssets = []; 
+        let activeFilter = 'ALL';
+        let activeSort = 'new';
+        let searchTerm = '';
+        const dataCache = new Map(); // 缓存数据，避免重复点击导致随机变化
+        const root = document.documentElement;
+
+        function init() {
+            renderSidebar();
+            // 默认加载第一个分类的所有内容
+            loadParentCategory(structure[0].children[0]);
+            
+            document.getElementById('sortSelect').addEventListener('change', (e) => {
+                activeSort = e.target.value;
+                updateGrid();
+            });
+            document.getElementById('zoomSlider').addEventListener('input', (e) => {
+                root.style.setProperty('--card-scale', e.target.value);
+            });
+            document.querySelector('.search-box input').addEventListener('input', (e) => {
+                searchTerm = e.target.value.trim().toLowerCase();
+                updateGrid();
+            });
+        }
+
+        // --- 渲染侧边栏 ---
+        function renderSidebar() {
+            const nav = document.getElementById('navList');
+            nav.innerHTML = '';
+
+            structure.forEach(group => {
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'nav-group-header';
+                groupHeader.innerText = group.group;
+                nav.appendChild(groupHeader);
+
+                group.children.forEach(parent => {
+                    const parentContainer = document.createElement('div');
+                    parentContainer.className = 'nav-parent';
+                    // 给每个 parent 绑定 id，方便样式更新
+                    parentContainer.dataset.parentId = parent.id;
+
+                    const header = document.createElement('div');
+                    header.className = 'nav-parent-header';
+                    header.innerHTML = `<span>${parent.name}</span><span class="nav-arrow">▶</span>`;
+                    
+                    // 点击父级：展开并加载该父级下的所有数据
+                    header.onclick = () => {
+                        const isExpanded = parentContainer.classList.contains('expanded');
+
+                        // 折叠：只收起，不刷新数据
+                        if (isExpanded) {
+                            parentContainer.classList.remove('expanded');
+                            parentContainer.classList.remove('active-parent');
+                            return;
+                        }
+
+                        // 展开前先收起其他父级
+                        document.querySelectorAll('.nav-parent').forEach(el => {
+                            el.classList.remove('expanded');
+                            el.classList.remove('active-parent');
+                        });
+
+                        // 展开并加载该父级
+                        parentContainer.classList.add('expanded');
+                        parentContainer.classList.add('active-parent');
+                        loadParentCategory(parent);
+                    };
+                    parentContainer.appendChild(header);
+
+                    const subList = document.createElement('div');
+                    subList.className = 'nav-sub-list';
+
+                    parent.subs.forEach(sub => {
+                        const subItem = document.createElement('div');
+                        subItem.className = 'nav-sub-item';
+                        subItem.innerText = sub.name;
+                        subItem.dataset.id = sub.id; 
+                        
+                        // 点击子级：加载特定数据
+                        subItem.onclick = (e) => {
+                            e.stopPropagation(); // 阻止冒泡，防止触发父级点击
+                            loadSubCategory(parent, sub);
+                        };
+                        subList.appendChild(subItem);
+                    });
+
+                    parentContainer.appendChild(subList);
+                    nav.appendChild(parentContainer);
+                });
+            });
+        }
+
+        // --- 逻辑修复：加载父级分类（显示所有子级内容） ---
+        function loadParentCategory(parent) {
+            currentParent = parent;
+            root.style.setProperty('--accent', parent.color);
+            document.getElementById('pageTitle').innerText = `${parent.name} / ALL`;
+
+            // 1. 样式更新：父级高亮，清除所有子级选中
+            document.querySelectorAll('.nav-parent').forEach(el => {
+                if(el.dataset.parentId === parent.id) {
+                    el.classList.add('active-parent');
+                } else {
+                    el.classList.remove('active-parent');
+                }
+            });
+            document.querySelectorAll('.nav-sub-item').forEach(el => el.classList.remove('active'));
+
+            // 2. 数据生成：合并所有子分类的数据
+            const cacheKey = `${parent.id}|ALL`;
+            if (dataCache.has(cacheKey)) {
+                currentAssets = dataCache.get(cacheKey);
+            } else {
+                let allAssets = [];
+                let allTags = new Set();
+                parent.subs.forEach(sub => {
+                    const subAssets = generateData(parent, sub);
+                    allAssets = allAssets.concat(subAssets);
+                    sub.tags.forEach(t => allTags.add(t));
+                });
+                currentAssets = allAssets;
+                dataCache.set(cacheKey, currentAssets);
+            }
+
+            // 3. 汇总标签
+            let allTags = new Set();
+            parent.subs.forEach(sub => sub.tags.forEach(t => allTags.add(t)));
+
+            // 4. 渲染筛选标签
+            renderFilters(Array.from(allTags));
+            activeFilter = 'ALL';
+            updateGrid();
+        }
+
+        // --- 逻辑修复：加载子分类（单选逻辑） ---
+        function loadSubCategory(parent, sub) {
+            currentParent = parent;
+            root.style.setProperty('--accent', parent.color);
+            document.getElementById('pageTitle').innerText = `${parent.name} / ${sub.name}`;
+
+            // 1. 样式更新：强制清除其他所有选中状态
+            document.querySelectorAll('.nav-parent').forEach(el => {
+                if(el.dataset.parentId === parent.id) el.classList.add('active-parent');
+                else el.classList.remove('active-parent');
+            });
+
+            // 关键修复：遍历所有 sub-item，仅高亮当前点击的
+            document.querySelectorAll('.nav-sub-item').forEach(el => {
+                if(el.dataset.id === sub.id) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+
+            // 2. 数据生成（带缓存）
+            const cacheKey = `${parent.id}|${sub.id}`;
+            if (dataCache.has(cacheKey)) {
+                currentAssets = dataCache.get(cacheKey);
+            } else {
+                currentAssets = generateData(parent, sub);
+                dataCache.set(cacheKey, currentAssets);
+            }
+            
+            // 3. 渲染
+            renderFilters(sub.tags);
+            activeFilter = 'ALL';
+            updateGrid();
+        }
+
+        function generateData(parent, sub) {
+            const arr = [];
+            const count = 6 + Math.floor(Math.random()*6);
+            for(let i=0; i<count; i++) {
+                const mainTag = sub.tags[Math.floor(Math.random()*sub.tags.length)];
+                const imgCount = Math.random() > 0.8 ? 3 : 1;
+                const images = [];
+                for(let j=0; j<imgCount; j++) images.push(`https://picsum.photos/seed/${sub.id}${i}${j}/600/400`);
+
+                arr.push({
+                    title: `${sub.name}_${i}_${parent.type}`,
+                    tag: mainTag,
+                    allTags: [mainTag, parent.type === 'CODE' ? 'C++' : '4K'],
+                    images: images,
+                    size: Math.floor(Math.random()*500)+10,
+                    sizeStr: (Math.random()*500).toFixed(1)+' MB',
+                    ver: 'v.'+(Math.random()*2+1).toFixed(1),
+                    date: Date.now() - Math.floor(Math.random()*10000)
+                });
+            }
+            return arr;
+        }
+
+        function renderFilters(tags) {
+            const container = document.getElementById('filterContainer');
+            container.innerHTML = '';
+            container.appendChild(createFilterChip('ALL', true));
+            tags.forEach(t => container.appendChild(createFilterChip(t, false)));
+        }
+
+        function createFilterChip(text, isActive) {
+            const el = document.createElement('div');
+            el.className = `filter-chip ${isActive?'active':''}`;
+            el.innerText = text;
+            el.onclick = () => {
+                document.querySelectorAll('.filter-chip').forEach(e=>e.classList.remove('active'));
+                el.classList.add('active');
+                activeFilter = text;
+                updateGrid();
+            };
+            return el;
+        }
+
+        function updateGrid() {
+            let list = [...currentAssets];
+            if(activeFilter !== 'ALL') list = list.filter(item => item.tag === activeFilter);
+            if(searchTerm) {
+                const term = searchTerm;
+                list = list.filter(item => {
+                    const haystack = `${item.title} ${item.tag} ${item.allTags.join(' ')}`.toLowerCase();
+                    return haystack.includes(term);
+                });
+            }
+            
+            if(activeSort === 'new') list.sort((a,b)=>b.date - a.date);
+            else if(activeSort === 'size') list.sort((a,b)=>b.size - a.size);
+            else if(activeSort === 'name') list.sort((a,b)=>a.title.localeCompare(b.title));
+
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            list.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openModal(item);
+
+                const badge = item.images.length > 1 ? `<div class="multi-badge">▣ ${item.images.length}</div>` : '';
+                const tagsHtml = item.allTags.map(t=>`<span class="tag-pill">${t}</span>`).join('');
+
+                card.innerHTML = `
+                    <div class="card-cover">
+                        <div class="scanline-overlay"></div>
+                        ${badge}
+                        <img src="${item.images[0]}" class="card-img" loading="lazy">
+                    </div>
+                    <div class="card-body">
+                        <div class="card-tags">${tagsHtml}</div>
+                        <div class="card-title">${item.title}</div>
+                        <div class="card-meta">
+                            <span><b>SIZE</b> ${item.sizeStr}</span>
+                            <span><b>VER</b> ${item.ver}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- 详情页逻辑 ---
+        const modal = document.getElementById('modal');
+        const mainImg = document.getElementById('mainImg');
+        const thumbStrip = document.getElementById('thumbStrip');
+
+        function openModal(item) {
+            document.getElementById('modalTitle').innerText = item.title;
+            document.getElementById('modalTopTag').innerText = currentParent.type;
+            document.getElementById('modalStats').innerHTML = `
+                <div style="background:#222; padding:10px;"><div style="font-size:10px; color:#666">SIZE</div><div style="color:#fff">${item.sizeStr}</div></div>
+                <div style="background:#222; padding:10px;"><div style="font-size:10px; color:#666">VERSION</div><div style="color:#fff">${item.ver}</div></div>
+            `;
+            mainImg.src = item.images[0];
+            thumbStrip.innerHTML = '';
+            if (item.images.length > 1) {
+                thumbStrip.style.display = 'flex';
+                item.images.forEach(url => {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'thumb-item';
+                    thumb.innerHTML = `<img src="${url}">`;
+                    thumb.onclick = () => {
+                        mainImg.src = url;
+                        document.querySelectorAll('.thumb-item').forEach(el=>el.classList.remove('selected'));
+                        thumb.classList.add('selected');
+                    };
+                    if(url===item.images[0]) thumb.classList.add('selected');
+                    thumbStrip.appendChild(thumb);
+                });
+            } else { thumbStrip.style.display = 'none'; }
+            document.querySelector('.modal-panel').classList.remove('fullscreen');
+            modal.classList.add('active');
+        }
+
+        function closeModal() { modal.classList.remove('active'); }
+
+        function toggleFullscreen() {
+            document.querySelector('.modal-panel').classList.toggle('fullscreen');
+        }
+
+        init();
+    </script>
+</body>
+</html>
