@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER VAULT | NEURAL SYSTEM v7.0</title>
+    <title>CYBER VAULT | NEURAL SYSTEM v8.0</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for cleaner icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         :root {
             --bg-core: #020204;
-            --bg-panel: rgba(10, 12, 16, 0.85); 
+            --bg-panel: rgba(10, 12, 16, 0.9); 
             --border-base: rgba(0, 243, 255, 0.15);
             --border-glow: rgba(0, 243, 255, 0.4);
             --accent: #00f3ff;
@@ -65,7 +67,7 @@
         }
         .viewport-container.hidden { opacity: 0; pointer-events: none; filter: blur(10px); transform: scale(0.95); }
 
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
 
@@ -137,6 +139,28 @@
             transform: skewX(15deg); background: transparent; border: none; color: #fff; font-family: var(--font-main);
             font-size: 12px; width: 100%; outline: none;
         }
+        
+        /* User Profile / Upload Trigger */
+        .user-profile-box {
+            width: 40px; height: 40px; 
+            border: 1px solid var(--border-base); 
+            background: rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center; 
+            color: var(--accent); font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+            position: relative;
+        }
+        .user-profile-box:hover {
+            background: var(--accent); color: #000;
+            box-shadow: 0 0 15px var(--accent);
+        }
+        .user-profile-box::after {
+            content: '+'; position: absolute; top: -5px; right: -5px;
+            font-size: 10px; background: var(--bg-core); border: 1px solid var(--accent);
+            color: var(--accent); width: 14px; height: 14px; display: flex;
+            align-items: center; justify-content: center; border-radius: 50%;
+        }
+
         .toolbar {
             height: 60px; border-bottom: 1px solid var(--border-base); display: flex; align-items: center; justify-content: space-between;
             padding: 0 40px; background: rgba(255,255,255,0.01);
@@ -206,11 +230,33 @@
             z-index: 2020; font-size: 10px; transition: 0.3s; font-weight: bold; letter-spacing: 1px;
         }
         .expand-btn:hover { color: var(--accent); border-color: var(--accent); }
+        
+        /* Modal Content Layout */
         .modal-gallery { width: 65%; background: #000; display: flex; flex-direction: column; border-right: 1px solid #333; position: relative; }
         .main-view { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; position: relative; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); }
         .media-object { width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.5s; display: none; }
         .media-object.active { display: block; opacity: 1; }
-        .pdf-frame { width: 100%; height: 100%; border: none; }
+        
+        /* PDF/Text Reader Styles */
+        .pdf-frame { width: 100%; height: 100%; border: none; background: #fff; }
+        .text-reader-container {
+            width: 100%; height: 100%; display: flex;
+            background: #0a0a0c; color: #ccc;
+        }
+        .text-toc {
+            width: 200px; border-right: 1px solid #333; overflow-y: auto;
+            padding: 20px; font-size: 11px; background: rgba(0,0,0,0.3);
+        }
+        .toc-item { padding: 8px 0; border-bottom: 1px solid #222; cursor: pointer; transition:0.2s; }
+        .toc-item:hover { color: var(--accent); padding-left: 5px; }
+        .text-content {
+            flex: 1; padding: 40px; overflow-y: auto; font-family: 'Courier New', monospace;
+            font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+        }
+        .text-content h1 { color: var(--accent); margin-bottom: 20px; border-bottom: 1px dashed var(--accent); padding-bottom: 10px; }
+        .text-content p { margin-bottom: 15px; }
+
+
         .nav-btn {
             position: absolute; top: 50%; transform: translateY(-50%); width: 60px; height: 100px; 
             display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; transition: 0.3s; opacity: 0.6;
@@ -244,58 +290,91 @@
         }
         .cyber-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 30px var(--accent); }
 
-        /* --- FIXED LOADING BAR (PRECISE MATCH) --- */
+        /* --- FIXED LOADER (Red Style) --- */
         .cyber-loader {
             position: absolute; inset: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.9);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 50; opacity: 0; pointer-events: none; transition: 0.3s;
+            z-index: 50; opacity: 0; pointer-events: none; transition: 0.25s ease;
         }
         .cyber-loader.active { opacity: 1; pointer-events: auto; }
         
-        .loader-box { width: 320px; position: relative; text-align: center;}
+        .loader-box { width: 380px; position: relative; }
         
-        /* Text above the bar */
         .loader-text-row {
-            display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 16px;
-            color: var(--accent); margin-bottom: 15px; font-weight: 800; letter-spacing: 2px;
-            text-shadow: 0 0 8px var(--accent);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; color: var(--c-alert); margin-bottom: 8px; font-weight: 800; letter-spacing: 2px;
+            text-shadow: 0 0 8px var(--c-alert); font-family: var(--font-main);
         }
         
-        /* Container: Bracket Style [ ] */
+        /* Container for the bar */
         .loader-bar-container {
-            width: 100%; height: 36px;
+            width: 100%; height: 24px;
             position: relative;
-            padding: 4px;
-            /* No full border */
+            padding: 3px;
         }
         
-        /* Left Bracket [ */
+        /* Brackets [ ] styling */
         .loader-bar-container::before {
-            content:''; position: absolute; left: 0; top: 0; width: 12px; height: 100%;
-            border: 3px solid var(--accent); border-right: none;
-            box-shadow: -2px 0 10px rgba(0, 243, 255, 0.5);
+            content:''; position: absolute; left: 0; top: 0; width: 8px; height: 100%;
+            border: 2px solid var(--c-alert); border-right: none;
         }
-        /* Right Bracket ] */
         .loader-bar-container::after {
-            content:''; position: absolute; right: 0; top: 0; width: 12px; height: 100%;
-            border: 3px solid var(--accent); border-left: none;
-            box-shadow: 2px 0 10px rgba(0, 243, 255, 0.5);
+            content:''; position: absolute; right: 0; top: 0; width: 8px; height: 100%;
+            border: 2px solid var(--c-alert); border-left: none;
         }
 
-        /* Red Segmented Fill - with gap from brackets */
+        /* The Filling Bar */
         .loader-fill {
             height: 100%; 
-            margin: 0 16px; /* Spacing from brackets */
-            width: 0%; /* Dynamic width */
+            margin: 0 12px;
+            width: 0%; 
+            background: var(--c-alert); /* Solid Red as in image */
+            box-shadow: 0 0 15px var(--c-alert);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Striped effect inside the bar */
+        .loader-fill::after {
+            content: ''; position: absolute; inset: 0;
             background: repeating-linear-gradient(
                 90deg,
-                var(--c-alert) 0px, var(--c-alert) 8px,   /* Red block */
-                transparent 8px, transparent 12px      /* Gap */
+                transparent 0px, transparent 4px,
+                rgba(0,0,0,0.4) 4px, rgba(0,0,0,0.4) 8px
             );
-            box-shadow: 0 0 15px var(--c-alert);
-            transition: width 0.1s linear;
         }
+
+        /* --- UPLOAD PANEL --- */
+        .upload-panel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 500px; background: #0a0c10; border: 1px solid var(--accent);
+            z-index: 3000; padding: 0; display: none; flex-direction: column;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            opacity: 0; transition: 0.3s;
+        }
+        .upload-panel.active { display: flex; opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+        
+        .up-header {
+            padding: 15px 20px; background: rgba(0, 243, 255, 0.1); border-bottom: 1px solid var(--border-base);
+            display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: bold;
+        }
+        .up-body { padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-label { font-size: 11px; color: var(--accent); letter-spacing: 1px; }
+        .cyber-input {
+            background: rgba(0,0,0,0.3); border: 1px solid #333; color: #fff; padding: 10px;
+            font-family: var(--font-main); outline: none; transition: 0.3s; font-size: 13px;
+        }
+        .cyber-input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); }
+        
+        .file-drop-zone {
+            border: 2px dashed #333; height: 100px; display: flex; align-items: center; justify-content: center;
+            color: #666; font-size: 12px; cursor: pointer; transition: 0.3s; flex-direction: column; gap: 5px;
+        }
+        .file-drop-zone:hover { border-color: var(--accent); color: var(--accent); background: rgba(0, 243, 255, 0.02); }
+        
+        .up-footer { padding: 20px; border-top: 1px solid #222; display: flex; justify-content: flex-end; gap: 10px; }
         
         /* --- NEURAL GRAPH SYSTEM v7.0 --- */
         .graph-container {
@@ -399,7 +478,10 @@
                 <div class="page-title" id="pageTitle">DASHBOARD<span class="page-subtitle" id="pageSubtitle">/ ONLINE</span></div>
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <div class="search-box"><input type="text" placeholder="SEARCH DATABASE..."></div>
-                    <div style="width:35px; height:35px; border:1px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:var(--accent); font-weight:bold;">ID</div>
+                    <!-- Upload / User Profile Trigger -->
+                    <div class="user-profile-box" onclick="openUploadPanel()" title="UPLOAD DATA">
+                        <i class="ph ph-user"></i>
+                    </div>
                 </div>
             </header>
 
@@ -498,12 +580,61 @@
                     <div><div style="color:#666; font-size:10px;">STATUS</div><div style="color:var(--c-green); font-weight:bold; font-size:14px;">ACTIVE</div></div>
                     <div><div style="color:#666; font-size:10px;">FORMAT</div><div class="stat-val" id="modalType" style="margin-left:0; font-size:14px; color:#fff;">DATA</div></div>
                 </div>
-                <div style="margin-top:20px; font-size:12px; color:#888; line-height:1.6; flex:1; overflow-y:auto;">
+                <div style="margin-top:20px; font-size:12px; color:#888; line-height:1.6; flex:1; overflow-y:auto;" id="modalDesc">
                     <p style="margin-bottom:10px;">> Analyzing packet header...</p>
                     <p>Asset verified. Security checksum valid. Contains high-resolution visual data and telemetry logs from the targeted sector.</p>
                 </div>
                 <div class="cyber-btn">INITIATE DOWNLOAD</div>
             </div>
+        </div>
+    </div>
+
+    <!-- Upload Panel -->
+    <div class="upload-panel" id="uploadPanel">
+        <div class="up-header">
+            <span>// UPLOAD_DATA_PACKET</span>
+            <span style="cursor:pointer; color:var(--c-alert);" onclick="closeUploadPanel()">×</span>
+        </div>
+        <div class="up-body">
+            <div class="form-group">
+                <div class="form-label">SELECT CATEGORY CLASSIFICATION</div>
+                <select id="upCategory" class="cyber-input" onchange="updateSubCats()">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="form-label">SUB-ROUTINE</div>
+                <select id="upSub" class="cyber-input">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="form-label">DATA TITLE</div>
+                <input type="text" id="upTitle" class="cyber-input" placeholder="ENTER_ASSET_NAME">
+            </div>
+            <div class="form-group">
+                <div class="form-label">DATA TYPE (DETECTED)</div>
+                <div style="display:flex; gap:10px;">
+                    <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:#aaa;">
+                        <input type="radio" name="upType" value="image" checked> IMAGE
+                    </label>
+                    <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:#aaa;">
+                        <input type="radio" name="upType" value="txt"> TEXT/LOG
+                    </label>
+                    <label style="display:flex; align-items:center; gap:5px; font-size:11px; color:#aaa;">
+                        <input type="radio" name="upType" value="pdf"> PDF/DOC
+                    </label>
+                </div>
+            </div>
+            <div class="file-drop-zone" onclick="document.getElementById('fileInput').click()">
+                <i class="ph ph-upload-simple" style="font-size:24px;"></i>
+                <span>DROP FILES OR CLICK TO UPLOAD</span>
+                <input type="file" id="fileInput" style="display:none">
+            </div>
+        </div>
+        <div class="up-footer">
+            <div class="cyber-btn" style="width:100px; font-size:11px; padding:10px; background:transparent; color:#888; border-color:#444;" onclick="closeUploadPanel()">CANCEL</div>
+            <div class="cyber-btn" style="width:140px; font-size:11px; padding:10px;" onclick="submitUpload()">UPLOAD</div>
         </div>
     </div>
 
@@ -525,11 +656,17 @@
                             { id: 'gallery', name: 'Scene Gallery', tags: ['Multi-View', 'Photos', 'Evidence'] },
                             { id: 'video', name: 'Surveillance', tags: ['Footage', 'CCTV', 'Night Vision'] }
                         ]
-                    },
+                    }
+                ]
+            },
+            {
+                group: 'ARCHIVES',
+                children: [
                     {
-                        id: 'sys', name: 'SYSTEM', color: '#ffcc00',
+                        id: 'docs', name: 'DOCUMENTS', color: '#ffcc00',
                         subs: [
-                            { id: 'core', name: 'Core Kernel', tags: ['Root', 'Admin'] }
+                            { id: 'manuals', name: 'Manuals', tags: ['PDF', 'Blueprint', 'Tech'] },
+                            { id: 'logs', name: 'Mission Logs', tags: ['Text', 'Report', 'Encrypted'] }
                         ]
                     }
                 ]
@@ -541,6 +678,8 @@
         let activeItem = null;
         let loadTimer = null;
         const root = document.documentElement;
+        let currentParent = null;
+        let currentSub = null;
 
         function init() {
             renderSidebar();
@@ -557,14 +696,17 @@
             });
             
             const filterContainer = document.getElementById('filterChecks');
-            structure[0].children.forEach(cat => {
-                const label = document.createElement('label');
-                label.className = 'filter-checkbox';
-                label.innerHTML = `<input type="checkbox" checked value="${cat.name}" onchange="updateGraphSettings()"> ${cat.name}`;
-                filterContainer.appendChild(label);
+            structure.forEach(group => {
+                group.children.forEach(cat => {
+                    const label = document.createElement('label');
+                    label.className = 'filter-checkbox';
+                    label.innerHTML = `<input type="checkbox" checked value="${cat.name}" onchange="updateGraphSettings()"> ${cat.name}`;
+                    filterContainer.appendChild(label);
+                });
             });
 
             initParticles();
+            initUploadForm();
         }
 
         function renderSidebar() {
@@ -586,7 +728,7 @@
                         document.querySelectorAll('.nav-parent').forEach(p => p.classList.remove('expanded', 'active-parent'));
                         if(!isExpanded) {
                             parentEl.classList.add('expanded', 'active-parent');
-                            loadSubCategory(parent, parent.subs[0]);
+                            if(parent.subs.length > 0) loadSubCategory(parent, parent.subs[0]);
                         }
                     };
                     const subList = document.createElement('div');
@@ -606,6 +748,8 @@
         }
 
         function loadSubCategory(parent, sub) {
+            currentParent = parent;
+            currentSub = sub;
             root.style.setProperty('--accent', parent.color);
             root.style.setProperty('--border-glow', parent.color + '66');
             document.getElementById('pageTitle').innerHTML = `${parent.name}<span class="page-subtitle">/ ${sub.name}</span>`;
@@ -620,11 +764,12 @@
 
         function generateData(parent, sub) {
             const arr = [];
-            for(let i=0; i<8; i++) {
+            for(let i=0; i<6; i++) {
                 const tag = sub.tags[i % sub.tags.length];
                 let type = 'image';
                 let sources = [`https://picsum.photos/seed/${sub.id}${i}/800/600`];
                 
+                // Content Type Logic
                 if(sub.id === 'video' && i < 3) {
                     type = 'video';
                     sources = ['https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'];
@@ -637,13 +782,28 @@
                         `https://picsum.photos/seed/${sub.id}${i}c/800/600`
                     ];
                 }
+                else if (sub.id === 'manuals') {
+                    type = 'pdf';
+                    // Using sample PDF or just placeholder text simulated as PDF
+                    sources = ['https://pdfobject.com/pdf/sample.pdf']; 
+                }
+                else if (sub.id === 'logs') {
+                    type = 'txt';
+                    sources = ['LOG_DATA']; 
+                }
+
+                // Thumbnails
+                let thumb = sources[0];
+                if(type === 'video') thumb = `https://picsum.photos/seed/${sub.id}${i}/400/300?blur=2`;
+                if(type === 'pdf') thumb = `https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC`;
+                if(type === 'txt') thumb = `https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace`;
 
                 arr.push({
                     title: `${sub.name}_${type.toUpperCase()}_${i+100}`,
                     tag: tag,
-                    size: (Math.random()*400 + 100).toFixed(1) + ' MB',
+                    size: (Math.random()*400 + 10).toFixed(1) + ' MB',
                     ver: 'v.' + (Math.random()*5+1).toFixed(1),
-                    thumbnail: type === 'video' ? `https://picsum.photos/seed/${sub.id}${i}/400/300?blur=2` : sources[0],
+                    thumbnail: thumb,
                     type: type,
                     sources: sources
                 });
@@ -687,6 +847,7 @@
                 card.onclick = () => openModal(item);
                 let typeBadge = item.type.toUpperCase();
                 if(item.type === 'gallery') typeBadge = 'GALLERY (' + item.sources.length + ')';
+                
                 card.innerHTML = `
                     <div class="card-type-badge">${typeBadge}</div>
                     <div class="card-cover"><div class="card-scan"></div><img src="${item.thumbnail}" class="card-img" loading="lazy"></div>
@@ -714,7 +875,7 @@
             container.innerHTML = ''; 
             
             // Allow gallery mode for single items if passed from graph
-            if(item.type === 'gallery' || item.sources.length > 1) {
+            if(item.type === 'gallery' || (item.sources.length > 1 && item.type !== 'pdf' && item.type !== 'txt')) {
                 document.getElementById('btnPrev').style.display = 'flex';
                 document.getElementById('btnNext').style.display = 'flex';
                 document.getElementById('thumbStrip').classList.add('active');
@@ -732,11 +893,11 @@
             let progress = 0;
             if(loadTimer) clearInterval(loadTimer);
             loadTimer = setInterval(() => {
-                progress += Math.random() * 15;
+                progress += Math.random() * 8; // Slower for effect
                 if(progress > 100) progress = 100;
                 bar.style.width = progress + '%'; pct.innerText = Math.floor(progress) + '%';
-                if(progress === 100) { clearInterval(loadTimer); setTimeout(() => { loader.classList.remove('active'); if(callback) callback(); }, 400); }
-            }, 80);
+                if(progress === 100) { clearInterval(loadTimer); setTimeout(() => { loader.classList.remove('active'); if(callback) callback(); }, 300); }
+            }, 50);
         }
 
         function renderMediaContent(item, index) {
@@ -745,17 +906,49 @@
             simulateLoading(() => {
                 container.innerHTML = ''; 
                 let element;
+                
                 if (item.type === 'video') {
-                    element = document.createElement('video'); element.src = src; element.controls = true; element.autoplay = true; element.loop = true;
-                } else if (item.type === 'pdf') {
-                    element = document.createElement('iframe'); element.className = 'pdf-frame'; element.src = src;
-                } else {
-                    element = document.createElement('img'); element.src = src;
+                    element = document.createElement('video'); element.src = src; element.controls = true; element.autoplay = true; element.loop = true; element.className = 'media-object active';
+                    container.appendChild(element);
+                } 
+                else if (item.type === 'pdf') {
+                    element = document.createElement('iframe'); 
+                    element.className = 'pdf-frame media-object active'; 
+                    element.src = src + '#toolbar=0&navpanes=0'; // Simple embed attempt
+                    container.appendChild(element);
+                } 
+                else if (item.type === 'txt') {
+                    // Create Text Reader UI
+                    const wrap = document.createElement('div');
+                    wrap.className = 'text-reader-container active media-object';
+                    
+                    // Mock Chapters
+                    const toc = document.createElement('div');
+                    toc.className = 'text-toc';
+                    toc.innerHTML = `<div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">// DIRECTORY</div>`;
+                    ['0x00_HEADER', '0x01_INIT_SEQ', '0x02_BODY_LOG', '0x03_ERR_DUMP', '0x04_EOF'].forEach(chap => {
+                        const row = document.createElement('div'); row.className = 'toc-item'; row.innerText = chap;
+                        toc.appendChild(row);
+                    });
+                    
+                    const content = document.createElement('div');
+                    content.className = 'text-content';
+                    content.innerHTML = `<h1>${item.title}</h1><p>DATE: 2077-11-02 <br>ENCRYPTION: AES-256-GCM</p><p>System diagnostics initialized. Core temperature stable at 98.4%. Neural link efficiency operating within acceptable parameters.</p><p>WARNING: Unauthorized access attempt detected in Sector 7G. Firewall protocols engaged. Traceroute initiated...</p><p>${generateRandomLog()}</p><p>${generateRandomLog()}</p>`;
+                    
+                    wrap.appendChild(toc);
+                    wrap.appendChild(content);
+                    container.appendChild(wrap);
                 }
-                element.className = 'media-object active';
-                container.appendChild(element);
+                else {
+                    element = document.createElement('img'); element.src = src; element.className = 'media-object active';
+                    container.appendChild(element);
+                }
             });
-            if(item.type === 'gallery' || item.sources.length > 1) updateThumbnailActive(index);
+            if(item.type === 'gallery' || (item.sources.length > 1 && item.type !== 'pdf' && item.type !== 'txt')) updateThumbnailActive(index);
+        }
+        
+        function generateRandomLog() {
+            return `>> PACKET_DUMP: ${Math.random().toString(36).substring(7)} ${Math.random().toString(36).substring(7)}... [OK]`;
         }
 
         function renderThumbnails() {
@@ -798,6 +991,78 @@
             if(e.key === 'ArrowLeft') navigateMedia(-1);
             if(e.key === 'ArrowRight') navigateMedia(1);
         });
+
+        // --- UPLOAD LOGIC ---
+        function initUploadForm() {
+            const catSel = document.getElementById('upCategory');
+            structure.forEach((group, idx) => {
+                group.children.forEach((cat, cIdx) => {
+                    const opt = document.createElement('option');
+                    opt.value = `${idx}-${cIdx}`;
+                    opt.innerText = cat.name;
+                    catSel.appendChild(opt);
+                });
+            });
+            updateSubCats();
+        }
+
+        function updateSubCats() {
+            const val = document.getElementById('upCategory').value.split('-');
+            const cat = structure[val[0]].children[val[1]];
+            const subSel = document.getElementById('upSub');
+            subSel.innerHTML = '';
+            cat.subs.forEach((sub, sIdx) => {
+                const opt = document.createElement('option');
+                opt.value = sIdx;
+                opt.innerText = sub.name;
+                subSel.appendChild(opt);
+            });
+        }
+
+        function openUploadPanel() {
+            document.getElementById('uploadPanel').classList.add('active');
+            document.getElementById('modal').classList.add('active'); // Use modal overlay for dimming
+            document.getElementById('modalPanel').style.display = 'none'; // Hide main modal content if visible
+        }
+
+        function closeUploadPanel() {
+            document.getElementById('uploadPanel').classList.remove('active');
+            document.getElementById('modal').classList.remove('active');
+            document.getElementById('modalPanel').style.display = 'flex'; // Reset
+        }
+
+        function submitUpload() {
+            const title = document.getElementById('upTitle').value || 'UNTITLED_ASSET';
+            const catVal = document.getElementById('upCategory').value.split('-');
+            const subIdx = document.getElementById('upSub').value;
+            const typeVal = document.querySelector('input[name="upType"]:checked').value;
+            
+            const category = structure[catVal[0]].children[catVal[1]];
+            const sub = category.subs[subIdx];
+
+            // Create Mock Item
+            const newItem = {
+                title: title,
+                tag: sub.tags[0],
+                size: (Math.random()*50).toFixed(1) + ' MB',
+                ver: 'v.1.0',
+                thumbnail: typeVal === 'image' ? `https://picsum.photos/seed/${Math.random()}/800/600` : 
+                          (typeVal === 'txt' ? `https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace` : 
+                          `https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC`),
+                type: typeVal,
+                sources: [typeVal === 'image' ? `https://picsum.photos/seed/${Math.random()}/800/600` : 'Mock Content']
+            };
+
+            // If we are currently viewing this category, append and refresh
+            if(currentSub && currentSub.name === sub.name) {
+                currentAssets.unshift(newItem);
+                renderGrid(currentAssets);
+            } else {
+                alert(`Uploaded to: ${category.name} / ${sub.name}`);
+            }
+            
+            closeUploadPanel();
+        }
 
         // --- COSMIC PARTICLES ---
         let particles = [];
@@ -906,7 +1171,6 @@
                         
                         sub.tags.forEach(tag => {
                             const tagId = tag;
-                            // Add Tag Node
                             if(!allNodes.find(n => n.id === tagId)) {
                                 allNodes.push({ 
                                     id: tagId,
@@ -919,26 +1183,19 @@
                                 });
                             }
                             allLinks.push({ source: subId, target: tagId });
-                            // 额外连回分类，保持层级可见
                             allLinks.push({ source: cat.name, target: tagId });
 
-                            // GENERATE CONTENT LEAF NODES
-                            // 3 items per tag for demo
-                            for(let k=0; k<3; k++) {
+                            for(let k=0; k<2; k++) {
                                 const itemId = `${tag}_ITEM_${k}`;
                                 const itemImg = `https://picsum.photos/seed/${tag}${k}/800/600`;
                                 
-                                // Create data object for Modal
                                 const itemData = {
                                     title: itemId,
                                     size: (Math.random()*100).toFixed(1) + 'MB',
                                     ver: '1.0',
                                     type: 'image',
-                                    sources: [itemImg] // Just itself
+                                    sources: [itemImg] 
                                 };
-
-                                // Also create a collection for the Tag parent so clicking tag opens gallery
-                                // (Logic handled in click handler below)
 
                                 allNodes.push({
                                     id: itemId,
@@ -948,11 +1205,10 @@
                                     parentCat: cat.name,
                                     parentSub: subId,
                                     img: itemImg,
-                                    data: itemData, // Store full data
+                                    data: itemData, 
                                     parentId: tagId
                                 });
                                 allLinks.push({ source: tagId, target: itemId });
-                                // 额外连回子类，方便过滤后仍保持关联
                                 allLinks.push({ source: subId, target: itemId });
                             }
                         });
@@ -976,7 +1232,6 @@
             const density = document.getElementById('setDensity').value; 
             const showImages = document.getElementById('setShowImages').checked;
 
-            // Simple Filter Logic (Category based)
             const activeFilters = [];
             document.querySelectorAll('#filterChecks input:checked').forEach(cb => activeFilters.push(cb.value));
 
@@ -987,7 +1242,6 @@
                 return activeFilters.includes(n.parentCat);
             });
 
-            // Density Filter (Only affects leaf items to save performance)
             if(density < 100) {
                 filteredNodes = filteredNodes.filter(n => {
                     if(n.group !== 'item') return true;
@@ -995,7 +1249,6 @@
                 });
             }
 
-            // Update Links
             const nodeIds = new Set(filteredNodes.map(n => n.id));
             const filteredLinks = allLinks.filter(l => {
                 const s = typeof l.source === 'object' ? l.source.id : l.source;
@@ -1018,7 +1271,7 @@
             const g = svg.append("g");
 
             simulation = d3.forceSimulation(filteredNodes)
-                .force("link", d3.forceLink(filteredLinks).id(d => d.id).distance(d => d.group === 'item' ? 30 : 100)) // Shorter links for leaves
+                .force("link", d3.forceLink(filteredLinks).id(d => d.id).distance(d => d.group === 'item' ? 30 : 100)) 
                 .force("charge", d3.forceManyBody().strength(d => d.group === 'item' ? -50 : -400))
                 .force("center", d3.forceCenter(width / 2, height / 2))
                 .force("collide", d3.forceCollide(d => d.group === 'item' ? 5 : parseInt(size)/2 + 10));
@@ -1043,7 +1296,6 @@
                 .attr("r", d => d.radius)
                 .attr("fill", d => d.color);
 
-            // Images for all non-leaf nodes or leaf nodes if desired
             node.filter(d => d.img).append("image")
                 .attr("class", "node-preview-img")
                 .attr("href", d => d.img)
@@ -1053,7 +1305,7 @@
                 .attr("height", size)
                 .style("cursor", "pointer")
                 .on("click", (e, d) => {
-                    e.stopPropagation(); // prevent zoom/pan trigger
+                    e.stopPropagation();
                     if(d.group === 'item') {
                         openModal(d.data);
                     } else if (d.group === 'tag') {
@@ -1075,7 +1327,7 @@
                 .attr("class", "node-text")
                 .attr("dx", 15)
                 .attr("dy", 4)
-                .text(d => d.group === 'item' ? '' : d.id); // Hide text for small items
+                .text(d => d.group === 'item' ? '' : d.id);
 
             simulation.on("tick", () => {
                 link
