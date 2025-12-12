@@ -1,0 +1,15 @@
+:root {
+  --bg-core: #020204;
+  --bg-panel: rgba(10, 12, 16, 0.9);
+  --border-base: rgba(0, 243, 255, 0.15);
+  --border-glow: rgba(0, 243, 255, 0.4);
+  --accent: #00f3ff;
+  --c-green: #00ff9d;
+  --c-alert: #ff0055;
+  --c-warn: #ffcc00;
+  --font-main: 'JetBrains Mono', monospace;
+  --card-scale: 1;
+}
+
+
+
