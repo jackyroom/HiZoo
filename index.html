@@ -975,6 +975,7 @@
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
             opacity: 0;
             transition: 0.3s;
+            pointer-events: none;
         }
 
         .upload-panel.active {
@@ -1301,6 +1302,156 @@
         .show-images .node-preview-img {
             opacity: 0.8;
         }
+
+        /* --- NEW UPLOAD PANEL STYLES --- */
+        .upload-panel {
+            width: 80% !important;
+            max-width: 1000px !important;
+            height: 80vh !important;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .up-left-col {
+            padding: 30px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .up-right-col {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* PREVIEW CARD */
+        .preview-label {
+            font-size: 10px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .preview-card {
+            width: 100%;
+            aspect-ratio: 4/5;
+            background: rgba(10, 12, 16, 0.9);
+            border: 1px solid var(--border-base);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .preview-cover {
+            height: 65%;
+            width: 100%;
+            background: #111;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-body {
+            padding: 15px;
+        }
+
+        .preview-title {
+            color: #fff;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .preview-tags {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .preview-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+            font-family: var(--font-mono);
+        }
+
+        /* FILE LIST */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            border: 1px solid transparent;
+        }
+
+        .file-item.active {
+            border-color: var(--accent);
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        /* COVER SELECTOR */
+        .cover-uploader {
+            width: 100%;
+            height: 100px;
+            border: 1px dashed #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .cover-uploader:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .cover-uploader span {
+            pointer-events: none;
+        }
+
+        .tag-pill {
+            background: rgba(0, 243, 255, 0.1);
+            color: var(--accent);
+            padding: 2px 6px;
+            font-size: 9px;
+            border-radius: 2px;
+        }
     </style>
 </head>
 
@@ -1462,50 +1613,107 @@
     </div>
 
     <!-- Upload Panel -->
+    <!-- Upload Panel (Redesigned) -->
     <div class="upload-panel" id="uploadPanel">
         <div class="up-header">
             <span>// UPLOAD_DATA_PACKET</span>
             <span style="cursor:pointer; color:var(--c-alert);" onclick="closeUploadPanel()">×</span>
         </div>
-        <div class="up-body">
-            <div class="form-group">
-                <div class="form-label">SELECT CATEGORY CLASSIFICATION</div>
-                <select id="upCategory" class="cyber-input" onchange="updateSubCats()">
-                    <!-- Populated by JS -->
-                </select>
+
+        <div class="upload-grid">
+            <!-- LEFT: FORM -->
+            <div class="up-left-col">
+                <div class="form-group">
+                    <div class="form-label">Title</div>
+                    <input type="text" id="upTitle" class="cyber-input" placeholder="AUTO_EXTRACTED_FROM_FILENAME"
+                        oninput="updatePreview()">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top:20px;">
+                    <div class="form-group">
+                        <div class="form-label">Category</div>
+                        <select id="upCategory" class="cyber-input"
+                            onchange="updateSubCats(); updatePreview();"></select>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Sub-Routine</div>
+                        <select id="upSub" class="cyber-input" onchange="updatePreview()"></select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                    <div class="form-label">Description (Encyrpted Log)</div>
+                    <textarea id="upDesc" class="cyber-input" style="height: 80px; resize: none;"
+                        placeholder="ENTER BRIEF DESCRIPTION..." oninput="updatePreview()"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                    <div class="form-label">Tags (Comma Separated)</div>
+                    <input type="text" id="upTags" class="cyber-input" placeholder="cyber, secure, data..."
+                        oninput="updatePreview()">
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                    <div class="form-label">Cover Image</div>
+                    <div class="cover-uploader" id="coverDrop" onclick="document.getElementById('coverInput').click()">
+                        <span>CLICK TO SET COVER</span>
+                        <input type="file" id="coverInput" style="display:none" accept="image/*"
+                            onchange="handleCoverSelect(this)">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                    <div class="file-drop-zone" id="mainDropZone"
+                        onclick="document.getElementById('fileInput').click()">
+                        <i class="ph ph-cloud-arrow-up"
+                            style="color:var(--accent); font-size: 32px; text-shadow: 0 0 10px var(--accent);"></i>
+                        <span style="margin-top:10px; color:#fff;">CLICK TO UPLOAD ASSETS</span>
+                        <span style="font-size:10px; color:#666; margin-top:5px;">JPG, PNG, WEBP (Max 5MB)</span>
+                        <input type="file" id="fileInput" style="display:none" multiple
+                            onchange="handleFileSelect(this)">
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <div class="form-label">SUB-ROUTINE</div>
-                <select id="upSub" class="cyber-input">
-                    <!-- Populated by JS -->
-                </select>
-            </div>
-            <div class="form-group">
-                <div class="form-label">DATA TITLE</div>
-                <input type="text" id="upTitle" class="cyber-input" placeholder="ENTER_ASSET_NAME">
-            </div>
-            <div class="form-group">
-                <div class="form-label">DATA TYPE (DETECTED)</div>
-                <select id="upDataType" class="cyber-input">
-                    <option value="image">IMAGE</option>
-                    <option value="video">VIDEO</option>
-                    <option value="model">3D MODEL</option>
-                    <option value="audio">AUDIO</option>
-                    <option value="doc">DOCUMENT</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <i class="ph ph-upload-simple" style="font-size:24px;"></i>
-                <span>DROP FILES OR CLICK TO UPLOAD</span>
-                <input type="file" id="fileInput" style="display:none">
+
+            <!-- RIGHT: PREVIEW -->
+            <div class="up-right-col">
+                <div class="preview-label">// LIVE_PREVIEW_RENDER_v9.0</div>
+
+                <!-- CARD MOCKUP -->
+                <div class="preview-card" id="previewCard">
+                    <div class="card-type-badge" id="preType">DATA</div>
+                    <div class="preview-cover">
+                        <div class="card-scan"></div>
+                        <img id="preImg" src="https://placehold.co/600x400/000/00f3ff?text=NO+PREVIEW"
+                            style="opacity: 0.8;">
+                    </div>
+                    <div class="preview-body">
+                        <div class="preview-title" id="preTitle">UNTITLED_ASSET</div>
+                        <div class="preview-tags" id="preTags">
+                            <span class="tag-pill">CYBER</span>
+                            <span class="tag-pill">SECURE</span>
+                        </div>
+                        <div class="preview-meta">
+                            <div class="pre-size">SIZE <span id="preSize" style="color:#fff;">0 MB</span></div>
+                            <div class="pre-ver">VER <span style="color:#fff;">v.1.0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILE LIST -->
+                <div class="preview-label" style="margin-top:20px;">// BATCH_QUEUE</div>
+                <div class="file-list" id="fileList">
+                    <div style="text-align:center; color:#444; padding:20px; font-size:10px;">NO FILES SELECTED</div>
+                </div>
             </div>
         </div>
+
         <div class="up-footer">
             <div class="cyber-btn"
                 style="width:100px; font-size:11px; padding:10px; background:transparent; color:#888; border-color:#444;"
-                onclick="closeUploadPanel()">CANCEL</div>
+                onclick="closeUploadPanel()">CANCEL_OP</div>
             <div class="cyber-btn" style="width:140px; font-size:11px; padding:10px;" onclick="submitUpload()">
-                UPLOAD
+                <i class="ph ph-upload-simple"></i> INITIATE_UPLOAD
             </div>
         </div>
     </div>
@@ -1576,6 +1784,10 @@
         const root = document.documentElement;
         let currentParent = null;
         let currentSub = null;
+
+        // --- UPLOAD STATE ---
+        let uploadedFiles = [];
+        let uploadedCover = null;
 
         function init() {
             renderSidebar();
@@ -1693,13 +1905,14 @@
                 else if (parent.id === 'audio') {
                     type = 'audio';
                     // Use working free audio samples
+                    // Reliable HTTPS Audio Samples (Free Music Archive / similar)
                     const audioSamples = [
-                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-                        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
+                        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3',
+                        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Elipses.mp3',
+                        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_06_-_Kick_Push_Vagabond.mp3',
+                        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3',
+                        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Elipses.mp3',
+                        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_06_-_Kick_Push_Vagabond.mp3',
                     ];
                     sources = [audioSamples[i % audioSamples.length]];
 
@@ -1755,10 +1968,9 @@
                     entry.vertCount = Math.floor(Math.random() * 30000 + 500); // Kept original calculation
                 }
                 if (type === 'audio') {
-                    entry.duration = Math.floor(Math.random() * 300) + 60; // 60-360s
-                    entry.bitrate = Math.random() > 0.5 ? '320 kbps' : '1411 kbps';
-                    entry.sampleRate = '44.1 kHz';
-                    entry.fmt = 'OGG_VORBIS';
+                    // entry.duration = ... (Removed to use actual metadata)
+                    // entry.bitrate = ... (Removed to use actual metadata)
+                    entry.fmt = 'MP3'; // Default to MP3 for these samples
                 }
 
                 arr.push(entry);
@@ -1932,247 +2144,316 @@
             container.innerHTML = '';
             container.classList.add('audio-player-container');
 
-            // Layout
+            // --- LAYOUT SETUP ---
             const wrapper = document.createElement('div');
             wrapper.className = 'audio-interface';
             wrapper.style.cssText = `
                 width: 100%; height: 100%; display: flex; flex-direction: column;
-                background: linear-gradient(180deg, rgba(0,20,30,0.8) 0%, rgba(0,0,0,0.9) 100%);
+                background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
                 position: relative; overflow: hidden;
             `;
 
-            // Visualizer Canvas
+            // Canvas Layer
             const canvas = document.createElement('canvas');
             canvas.className = 'audio-visualizer';
-            canvas.style.cssText = 'position: absolute; top:0; left:0; width:100%; height:100%; z-index: 0;';
+            canvas.style.cssText = 'position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1;';
             wrapper.appendChild(canvas);
 
-            // Controls Overlay
+            // Container for controls (minimal, floating at bottom)
             const controls = document.createElement('div');
             controls.className = 'audio-controls';
             controls.style.cssText = `
-                position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px;
-                background: linear-gradient(0deg, #000 0%, transparent 100%);
+                position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+                width: 80%; padding: 15px 30px;
+                background: rgba(0, 0, 0, 0.6);
+                border: 1px solid rgba(0, 243, 255, 0.3);
+                border-radius: 4px;
+                backdrop-filter: blur(5px);
                 z-index: 10; display: flex; align-items: center; gap: 20px;
+                box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
             `;
 
-            // Play Button
+            // Play/Pause Button
             const playBtn = document.createElement('button');
             playBtn.className = 'cyber-btn icon-only';
             playBtn.innerHTML = '<i class="ph ph-play"></i>';
-            playBtn.style.fontSize = '24px';
-
-            // Progress Bar Container
-            const progressContainer = document.createElement('div');
-            progressContainer.style.cssText = 'flex: 1; display: flex; align-items: center; gap: 10px;';
-
-            // Time Display
-            const timeDisplay = document.createElement('div');
-            timeDisplay.style.cssText = 'font-family: var(--font-mono); color: var(--color-text-dim); font-size: 14px; min-width: 100px;';
-            timeDisplay.innerHTML = `<span id="currTime">00:00</span> / <span id="durTime">--:--</span>`;
+            playBtn.style.cssText = `
+                font-size: 20px; width: 40px; height: 40px;
+                display: flex; align-items: center; justify-content: center;
+                padding: 0; 
+            `;
 
             // Progress Bar
-            const progressBar = document.createElement('div');
-            progressBar.style.cssText = `
-                flex: 1; height: 6px; background: rgba(255,255,255,0.1); 
-                border-radius: 3px; cursor: pointer; position: relative;
-                transition: height 0.2s;
-            `;
-            progressBar.onmouseenter = () => progressBar.style.height = '10px';
-            progressBar.onmouseleave = () => progressBar.style.height = '6px';
-
+            const progressContainer = document.createElement('div');
+            progressContainer.style.cssText = 'flex: 1; height: 4px; background: rgba(255,255,255,0.1); cursor: pointer; position: relative;';
             const progressFill = document.createElement('div');
-            progressFill.style.cssText = `
-                height: 100%; width: 0%; background: var(--accent); 
-                border-radius: 3px; position: relative;
-                box-shadow: 0 0 10px var(--accent);
-            `;
-            progressBar.appendChild(progressFill);
+            progressFill.style.cssText = 'height: 100%; width: 0%; background: var(--accent); box-shadow: 0 0 8px var(--accent); position: relative;';
+            // Scrubber handle
+            const scrubber = document.createElement('div');
+            scrubber.style.cssText = 'position: absolute; right: -4px; top: -3px; width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 5px #fff;';
+            progressFill.appendChild(scrubber);
+            progressContainer.appendChild(progressFill);
 
-            // Seek functionality
-            progressBar.onclick = (e) => {
-                const rect = progressBar.getBoundingClientRect();
-                const percent = (e.clientX - rect.left) / rect.width;
-                audio.currentTime = percent * audio.duration;
-            };
-
-            progressContainer.appendChild(timeDisplay);
-            progressContainer.appendChild(progressBar);
-
-            // Volume
-            const volContainer = document.createElement('div');
-            volContainer.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 150px;';
-            volContainer.innerHTML = `<i class="ph ph-speaker-high"></i> <input type="range" min="0" max="1" step="0.01" value="0.5" class="cyber-range" style="flex:1">`;
+            // Volume Icon
+            const volIcon = document.createElement('i');
+            volIcon.className = 'ph ph-speaker-high';
+            volIcon.style.color = 'var(--accent)';
 
             controls.appendChild(playBtn);
             controls.appendChild(progressContainer);
-            controls.appendChild(volContainer);
+            controls.appendChild(volIcon);
             wrapper.appendChild(controls);
             container.appendChild(wrapper);
 
-            // Audio Logic
+            // --- AUDIO LOGIC ---
             const audio = new Audio();
+            audio.crossOrigin = "anonymous";
             audio.src = item.sources[0];
             audio.volume = 0.5;
-            audio.load(); // Ensure audio is loaded
 
-            // Volume Control
-            const volInput = volContainer.querySelector('input');
-            volInput.addEventListener('input', (e) => audio.volume = e.target.value);
+            audio.onerror = (e) => {
+                console.error("Audio Load Error", e);
+                const title = document.getElementById('modalTitle');
+                if (title) {
+                    title.innerText = "AUDIO ERROR: LOAD FAILED";
+                    title.style.color = "var(--c-alert)";
+                }
+            };
 
-            // Play/Pause
+            // --- METADATA UPDATE ---
+            audio.onloadedmetadata = () => {
+                // Update Modal Info Panel (Right Side)
+                const durVal = document.getElementById('modalSize'); // Borrowed for Duration
+                const fmtVal = document.getElementById('modalVer');  // Borrowed for Format/Type
+
+                if (durVal) {
+                    durVal.parentElement.children[0].innerText = "DURATION"; // Label
+                    durVal.innerText = formatTime(audio.duration);
+                    durVal.style.color = "var(--accent)";
+                    durVal.style.textShadow = "0 0 5px var(--accent)";
+                }
+                if (fmtVal) {
+                    fmtVal.parentElement.children[0].innerText = "TYPE"; // Label
+                    // Get extension from URL
+                    const ext = item.sources[0].split('.').pop().split('?')[0].toUpperCase();
+                    fmtVal.innerText = ext + " AUDIO";
+                }
+
+                // Auto-play safely
+                playBtn.click();
+            };
+
+            // Progress Update
+            audio.ontimeupdate = () => {
+                if (audio.duration) {
+                    const pct = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = pct + '%';
+                }
+            };
+
+            // Seek
+            progressContainer.onclick = (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const p = (e.clientX - rect.left) / rect.width;
+                audio.currentTime = p * audio.duration;
+            };
+
+            // Toggle Play
             playBtn.onclick = () => {
                 if (audio.paused) {
+                    // Init Context on user gesture
+                    initAudioContext();
                     audio.play().then(() => {
                         playBtn.innerHTML = '<i class="ph ph-pause"></i>';
-                        initAudioContext();
-                    }).catch(err => {
-                        console.error('Audio play failed:', err);
-                    });
+                        playBtn.classList.add('active');
+                    }).catch(err => console.error("Play error:", err));
                 } else {
                     audio.pause();
                     playBtn.innerHTML = '<i class="ph ph-play"></i>';
+                    playBtn.classList.remove('active');
                 }
             };
 
-            // Time Update
-            audio.ontimeupdate = () => {
-                const curr = formatTime(audio.currentTime);
-                const dur = formatTime(audio.duration || 0);
-                document.getElementById('currTime').innerText = curr;
-                document.getElementById('durTime').innerText = dur;
-
-                // Update progress bar
-                if (audio.duration) {
-                    const percent = (audio.currentTime / audio.duration) * 100;
-                    progressFill.style.width = percent + '%';
-                }
-            };
-
-            // Metadata Loaded
-            audio.onloadedmetadata = () => {
-                document.getElementById('durTime').innerText = formatTime(audio.duration);
-                // Auto play
-                setTimeout(() => playBtn.click(), 100);
-            };
-
-            // Audio Context & Visualizer
+            // --- VISUALIZER ---
             function initAudioContext() {
                 if (audioContext) return;
-
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioCtx();
                 audioAnalyser = audioContext.createAnalyser();
+                audioAnalyser.fftSize = 512; // Higher resolution
                 audioSource = audioContext.createMediaElementSource(audio);
                 audioSource.connect(audioAnalyser);
                 audioAnalyser.connect(audioContext.destination);
 
-                audioAnalyser.fftSize = 256;
-                const bufferLength = audioAnalyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                // Resize Canvas
-                function resize() {
-                    canvas.width = wrapper.clientWidth;
-                    canvas.height = wrapper.clientHeight;
-                }
-                resize();
-                window.addEventListener('resize', resize);
-
-                function draw() {
-                    audioAnimationId = requestAnimationFrame(draw);
-                    audioAnalyser.getByteFrequencyData(dataArray);
-
-                    const ctx = canvas.getContext('2d');
-                    const w = canvas.width;
-                    const h = canvas.height;
-
-                    ctx.clearRect(0, 0, w, h);
-
-                    // Check for silence (CORS issue often results in all zeros)
-                    let sum = 0;
-                    for (let k = 0; k < dataArray.length; k++) sum += dataArray[k];
-
-                    // Fallback: If playing but no data (CORS), simulate frequency data
-                    if (sum === 0 && !audio.paused) {
-                        for (let k = 0; k < dataArray.length; k++) {
-                            // Create fake "beat" like patterns
-                            dataArray[k] = Math.random() * 150 + (k % 4 === 0 ? 100 : 0);
-                        }
-                    }
-
-                    // Cityscape / Equalizer Effect matching reference
-                    // Vertical bars with dotted/glow effect
-
-                    const barCount = 64;
-                    const barWidth = w / barCount;
-                    const gap = 2;
-
-                    for (let i = 0; i < barCount; i++) {
-                        const val = dataArray[i]; // 0-255
-                        const percent = val / 255;
-                        const barHeight = percent * h * 0.8;
-
-                        const x = i * barWidth;
-                        const y = h - barHeight;
-
-                        // Create gradient for the bar
-                        const gradient = ctx.createLinearGradient(0, h, 0, y);
-                        gradient.addColorStop(0, 'rgba(0, 243, 255, 0.8)'); // Cyan base
-                        gradient.addColorStop(0.5, 'rgba(0, 243, 255, 0.4)');
-                        gradient.addColorStop(1, 'rgba(0, 243, 255, 0)'); // Fade at top
-
-                        // Draw "dotted" effect or solid bar with overlay
-
-                        ctx.fillStyle = gradient;
-
-                        const dotSize = 3;
-                        const dotGap = 2;
-                        const numDots = Math.floor(barHeight / (dotSize + dotGap));
-
-                        for (let j = 0; j < numDots; j++) {
-                            const dotY = h - (j * (dotSize + dotGap));
-
-                            // Intensity variation
-                            const intensity = 1 - (j / numDots); // Brighter at bottom
-                            ctx.fillStyle = `rgba(0, 243, 255, ${intensity * percent + 0.2})`;
-
-                            ctx.beginPath();
-                            ctx.rect(x + gap, dotY, barWidth - gap * 2, dotSize);
-                            ctx.fill();
-                        }
-
-                        // Top "peak" light
-                        if (percent > 0.1) {
-                            ctx.fillStyle = '#fff';
-                            ctx.shadowBlur = 10;
-                            ctx.shadowColor = '#00f3ff';
-                            ctx.fillRect(x + gap, h - barHeight - 4, barWidth - gap * 2, 2);
-                            ctx.shadowBlur = 0;
-                        }
-                    }
-                }
-                draw();
+                // Start Loop
+                drawVisualizer();
             }
 
-            // Cleanup helper attached to the element for easy access
+            function drawVisualizer() {
+                audioAnimationId = requestAnimationFrame(drawVisualizer);
+
+                // Resize
+                canvas.width = wrapper.clientWidth;
+                canvas.height = wrapper.clientHeight;
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width;
+                const h = canvas.height;
+                const cx = w / 2;
+                const cy = h / 2;
+
+                // Data
+                const bufferLength = audioAnalyser.frequencyBinCount; // 256
+                const dataArray = new Uint8Array(bufferLength);
+                audioAnalyser.getByteFrequencyData(dataArray);
+
+                // Clear
+                ctx.fillStyle = '#020205'; // Deep dark background
+                ctx.fillRect(0, 0, w, h);
+
+                // --- RETRO CYBER EFFECTS ---
+
+                // 1. Grid Background ( Perspective )
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
+                ctx.lineWidth = 1;
+                // Vertical lines perspective
+                for (let i = -10; i <= 10; i++) {
+                    ctx.moveTo(cx + i * 100, h);
+                    ctx.lineTo(cx + i * 20, cy);
+                }
+                // Horizontal lines
+                for (let i = 0; i < 10; i++) {
+                    const y = cy + i * (h / 2 / 10) * i * 0.2; // Exponential spacing
+                    ctx.moveTo(0, y + 20);
+                    ctx.lineTo(w, y + 20);
+                }
+                ctx.stroke();
+                ctx.restore();
+
+                // 2. Center HUD Core
+                const radius = 60;
+                const pulse = (dataArray[10] / 255) * 20; // Beat reaction
+                const r = radius + pulse;
+
+                // Glowing Hexagon
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.strokeStyle = '#00f3ff';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f3ff';
+
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i;
+                    const x = r * Math.cos(angle);
+                    const y = r * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+
+                // Inner Time (HUD)
+                ctx.rotate(0); // Ensure text is straight
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 24px "Courier New"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 0;
+
+                const cur = formatTime(audio.currentTime);
+                ctx.fillText(cur, 0, 0);
+
+                // "REC" like dot
+                if (audio.paused) {
+                    ctx.fillStyle = '#555';
+                } else {
+                    ctx.fillStyle = (Date.now() % 1000 < 500) ? '#ff0055' : '#550022';
+                }
+                ctx.beginPath();
+                ctx.arc(0, 40, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+
+
+                // 3. Symmetrical Bars
+                const barWidth = 6;
+                const gap = 4;
+                const maxBarHeight = h * 0.5;
+                const bars = 40; // Number of bars per side
+
+                for (let i = 0; i < bars; i++) {
+                    // Map low freq to center, high to edges? Or vice versa.
+                    // Usually low is index 0. Let's put bass in center.
+                    const val = dataArray[i * 2]; // Skip some bins
+                    const p = val / 255;
+                    const barH = p * maxBarHeight;
+
+                    const xOffset = radius + 30 + (i * (barWidth + gap));
+
+                    // Color Grad
+                    const grad = ctx.createLinearGradient(0, cy - barH, 0, cy + barH);
+                    grad.addColorStop(0, 'rgba(0, 243, 255, 0)');
+                    grad.addColorStop(0.5, `rgba(0, 243, 255, ${p + 0.2})`);
+                    grad.addColorStop(1, 'rgba(0, 243, 255, 0)');
+
+                    ctx.fillStyle = grad;
+
+                    // Right Side
+                    ctx.fillRect(cx + xOffset, cy - barH / 2, barWidth, barH);
+                    // Left Side
+                    ctx.fillRect(cx - xOffset - barWidth, cy - barH / 2, barWidth, barH);
+
+                    // Mirror effect (Top/Bottom reflection hints)
+                    // ... slightly complex, let's stick to the main bars first.
+
+                    // Little "Caps"
+                    if (p > 0.1) {
+                        ctx.fillStyle = '#fff';
+                        // Right Cap
+                        ctx.fillRect(cx + xOffset, cy - barH / 2 - 2, barWidth, 2);
+                        ctx.fillRect(cx + xOffset, cy + barH / 2, barWidth, 2);
+                        // Left Cap
+                        ctx.fillRect(cx - xOffset - barWidth, cy - barH / 2 - 2, barWidth, 2);
+                        ctx.fillRect(cx - xOffset - barWidth, cy + barH / 2, barWidth, 2);
+                    }
+                }
+
+                // 4. Secondary Fills (Magenta) - High freqs
+                // Draw some flying particles or lines based on high freqs
+                const highFreq = dataArray[100];
+                if (highFreq > 100) {
+                    ctx.save();
+                    ctx.strokeStyle = `rgba(255, 0, 85, ${(highFreq - 100) / 155})`;
+                    ctx.beginPath();
+                    ctx.moveTo(0, cy);
+                    ctx.lineTo(w, cy);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Add reference text "5D STEREO"
+                ctx.font = '10px "Arial"';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.textAlign = 'center';
+                ctx.fillText("5D STEREO 360° SURROUND", cx, cy + r + 30);
+            }
+
+            // Cleanup
             container._cleanupAudio = () => {
-                if (audio) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.src = "";
-                    audio.load(); // Forces release of resource
-                }
-                if (audioContext && audioContext.state !== 'closed') {
-                    audioContext.close();
-                }
+                if (audio) { audio.pause(); audio.src = ""; }
+                if (audioContext && audioContext.state !== 'closed') audioContext.close();
                 if (audioAnimationId) cancelAnimationFrame(audioAnimationId);
                 audioContext = null;
-                audioAnalyser = null;
                 audioSource = null;
+                audioAnalyser = null;
             };
         }
 
         function formatTime(s) {
+            if (isNaN(s) || !isFinite(s)) return "00:00";
             const min = Math.floor(s / 60);
             const sec = Math.floor(s % 60);
             return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
@@ -2346,54 +2627,222 @@
 
         function openUploadPanel() {
             document.getElementById('uploadPanel').classList.add('active');
-            document.getElementById('modal').classList.add('active'); // Use modal overlay for dimming
-            document.getElementById('modalPanel').style.display = 'none'; // Hide main modal content if visible
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('modalPanel').style.display = 'none';
+            // Reset state
+            uploadedFiles = [];
+            uploadedCover = null;
+            document.getElementById('upTitle').value = '';
+            document.getElementById('upDesc').value = '';
+            document.getElementById('upTags').value = '';
+            document.getElementById('fileList').innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">NO FILES SELECTED</div>';
+            document.getElementById('preImg').src = 'https://placehold.co/600x400/000/00f3ff?text=NO+PREVIEW';
+            const coverDrop = document.getElementById('coverDrop');
+            coverDrop.style.backgroundImage = 'none';
+            // Preserve the input element when resetting - get it BEFORE clearing innerHTML
+            const coverInput = coverDrop.querySelector('#coverInput') || document.getElementById('coverInput');
+            coverDrop.innerHTML = '<span>CLICK TO SET COVER</span>';
+            // Re-add the input element if it exists
+            if (coverInput) {
+                coverDrop.appendChild(coverInput);
+            } else {
+                // If input doesn't exist, recreate it
+                const newInput = document.createElement('input');
+                newInput.type = 'file';
+                newInput.id = 'coverInput';
+                newInput.style.display = 'none';
+                newInput.accept = 'image/*';
+                newInput.onchange = function() { handleCoverSelect(this); };
+                coverDrop.appendChild(newInput);
+            }
         }
 
         function closeUploadPanel() {
             document.getElementById('uploadPanel').classList.remove('active');
             document.getElementById('modal').classList.remove('active');
-            document.getElementById('modalPanel').style.display = 'flex'; // Reset
+            document.getElementById('modalPanel').style.display = 'flex';
+        }
+
+        // --- NEW UPLOAD LOGIC ---
+
+        function handleFileSelect(input) {
+            const files = Array.from(input.files);
+            if (files.length === 0) return;
+
+            uploadedFiles = [...uploadedFiles, ...files];
+            renderFileList();
+            updatePreview();
+
+            // Auto-set cover from first image if not set
+            if (!uploadedCover) {
+                const firstImg = uploadedFiles.find(f => f.type.startsWith('image/'));
+                if (firstImg) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        // Don't auto-set if user already picked one manually, but here check again
+                        if (!uploadedCover) {
+                            document.getElementById('preImg').src = e.target.result;
+                            // Use this as cover for data
+                            uploadedCover = e.target.result;
+                        }
+                    };
+                    reader.readAsDataURL(firstImg);
+                }
+            }
+        }
+
+        function handleCoverSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedCover = e.target.result;
+                const coverDrop = document.getElementById('coverDrop');
+                coverDrop.style.backgroundImage = `url(${uploadedCover})`;
+                // Preserve the input element when clearing text - get it BEFORE clearing innerHTML
+                const coverInput = coverDrop.querySelector('#coverInput') || document.getElementById('coverInput');
+                coverDrop.innerHTML = ''; // Hide text
+                // Re-add the input element if it exists
+                if (coverInput) {
+                    coverDrop.appendChild(coverInput);
+                } else {
+                    // If input doesn't exist, recreate it
+                    const newInput = document.createElement('input');
+                    newInput.type = 'file';
+                    newInput.id = 'coverInput';
+                    newInput.style.display = 'none';
+                    newInput.accept = 'image/*';
+                    newInput.onchange = function() { handleCoverSelect(this); };
+                    coverDrop.appendChild(newInput);
+                }
+                updatePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderFileList() {
+            const list = document.getElementById('fileList');
+            list.innerHTML = '';
+            if (uploadedFiles.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">NO FILES SELECTED</div>';
+                return;
+            }
+
+            uploadedFiles.forEach((file, idx) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                        <i class="ph ph-file-text" style="color:var(--accent)"></i>
+                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${file.name}</span>
+                    </div>
+                    <div style="color:#666; font-size:9px;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                `;
+                // Remove button
+                const removeBtn = document.createElement('span');
+                removeBtn.innerHTML = '×';
+                removeBtn.style.cssText = "cursor:pointer; color:var(--c-alert); font-size:14px; margin-left:10px;";
+                removeBtn.onclick = () => {
+                    uploadedFiles.splice(idx, 1);
+                    renderFileList();
+                    updatePreview();
+                };
+                item.appendChild(removeBtn);
+                list.appendChild(item);
+            });
+        }
+
+        function updatePreview() {
+            const title = document.getElementById('upTitle').value || (uploadedFiles.length > 0 ? uploadedFiles[0].name : 'UNTITLED_ASSET');
+            const catVal = document.getElementById('upCategory').value.split('-');
+            const category = structure[catVal[0]].children[catVal[1]];
+            const desc = document.getElementById('upDesc').value;
+            const tags = document.getElementById('upTags').value.split(',');
+
+            document.getElementById('preTitle').innerText = title;
+            document.getElementById('preType').innerText = category.name.toUpperCase();
+
+            // Size
+            let totalSize = uploadedFiles.reduce((acc, f) => acc + f.size, 0);
+            document.getElementById('preSize').innerText = (totalSize / 1024 / 1024).toFixed(1) + ' MB';
+
+            // Tags
+            const tagContainer = document.getElementById('preTags');
+            tagContainer.innerHTML = '';
+            // Default tag
+            const defTag = document.createElement('span'); defTag.className = 'tag-pill'; defTag.innerText = 'NEW';
+            tagContainer.appendChild(defTag);
+
+            tags.forEach(t => {
+                if (t.trim()) {
+                    const span = document.createElement('span');
+                    span.className = 'tag-pill';
+                    span.innerText = t.trim().toUpperCase();
+                    tagContainer.appendChild(span);
+                }
+            });
+
+            // Cover
+            if (uploadedCover) {
+                document.getElementById('preImg').src = uploadedCover;
+            } else if (uploadedFiles.length === 0) {
+                document.getElementById('preImg').src = 'https://placehold.co/600x400/000/00f3ff?text=NO+PREVIEW';
+            }
         }
 
         function submitUpload() {
-            const title = document.getElementById('upTitle').value || 'UNTITLED_ASSET';
+            if (uploadedFiles.length === 0) {
+                alert(">> ACCESS DENIED: NO PAYLOAD DETECTED");
+                return;
+            }
+
+            const customTitle = document.getElementById('upTitle').value || 'UNTITLED_ASSET';
             const catVal = document.getElementById('upCategory').value.split('-');
             const subIdx = document.getElementById('upSub').value;
-            const typeVal = document.getElementById('upDataType').value;
+            const userTags = document.getElementById('upTags').value.split(',').filter(t => t.trim() !== '');
+            const userDesc = document.getElementById('upDesc').value;
 
             const category = structure[catVal[0]].children[catVal[1]];
             const sub = category.subs[subIdx];
 
-            // Create Mock Item
+            // Create blob URLs for all files
+            const blobSources = uploadedFiles.map(file => URL.createObjectURL(file));
+
+            // Determine primary type (from first file)
+            let type = 'doc';
+            const firstFile = uploadedFiles[0];
+            if (firstFile.type.startsWith('image')) type = uploadedFiles.length > 1 ? 'gallery' : 'image';
+            if (firstFile.type.startsWith('video')) type = 'video';
+            if (firstFile.type.startsWith('audio')) type = 'audio';
+            if (firstFile.name.endsWith('.glb') || firstFile.name.endsWith('.obj')) type = 'model';
+
+            // Calculate total size
+            const totalSize = uploadedFiles.reduce((acc, f) => acc + f.size, 0);
+
+            // Create ONE item with all sources
             const newItem = {
-                title: title,
-                tag: sub.tags[0],
-                size: (Math.random() * 50).toFixed(1) + ' MB',
+                title: customTitle,
+                tag: userTags.length > 0 ? userTags[0].toUpperCase() : sub.tags[0],
+                size: (totalSize / 1024 / 1024).toFixed(2) + ' MB',
                 ver: 'v.1.0',
-                thumbnail: typeVal === 'image' ? `https://picsum.photos/seed/${Math.random()}/800/600` :
-                    (typeVal === 'video' ? `https://picsum.photos/seed/${Math.random()}/400/300?blur=2` :
-                        (typeVal === 'model' ? `https://placehold.co/400x300/000/ff9900?text=3D+MODEL` :
-                            (typeVal === 'txt' ? `https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace` :
-                                `https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC`))),
-                type: typeVal,
-                sources: typeVal === 'image' ? [`https://picsum.photos/seed/${Math.random()}/800/600`] :
-                    (typeVal === 'video' ? ['https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'] :
-                        (typeVal === 'model' ? ['MOCK_3D_MODEL'] :
-                            ['Mock Content'])),
-                polyCount: typeVal === 'model' ? Math.floor(Math.random() * 50000 + 1000) : undefined,
-                vertCount: typeVal === 'model' ? Math.floor(Math.random() * 30000 + 500) : undefined
+                type: type,
+                thumbnail: uploadedCover || (type === 'image' || type === 'gallery' ? blobSources[0] : `https://placehold.co/600x400/000/00f3ff?text=${type.toUpperCase()}`),
+                sources: blobSources,
+                description: userDesc || undefined,
+                duration: (type === 'audio') ? 0 : undefined
             };
 
-            // If we are currently viewing this category, append and refresh
+            // Add to current data
             if (currentSub && currentSub.name === sub.name) {
                 currentAssets.unshift(newItem);
                 renderGrid(currentAssets);
             } else {
-                alert(`Uploaded to: ${category.name} / ${sub.name}`);
+                console.log(`Uploaded "${customTitle}" to ${category.name}/${sub.name}`);
             }
 
             closeUploadPanel();
+            alert(`>> UPLOAD COMPLETE: ${uploadedFiles.length} FILE(S) -> 1 ASSET CREATED`);
         }
 
         // --- COSMIC PARTICLES ---
