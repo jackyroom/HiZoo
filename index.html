@@ -281,6 +281,8 @@
             justify-content: space-between;
             padding: 0 40px;
             background: rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 100;
         }
 
         .page-title {
@@ -308,6 +310,97 @@
             padding: 8px 15px;
             width: 280px;
             transform: skewX(-15deg);
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: calc(100% + 15px);
+            left: -10px;
+            right: -10px;
+            background: rgba(8, 10, 14, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-top: 2px solid var(--accent);
+            max-height: 450px;
+            overflow-y: auto;
+            z-index: 2000;
+            transform: skewX(15deg);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 243, 255, 0.15);
+            display: none;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) #000;
+        }
+
+        .search-suggestions::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .search-suggestions::-webkit-scrollbar-thumb {
+            background: var(--accent);
+        }
+
+        .search-suggestions::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        .search-suggestions.active {
+            display: block;
+        }
+
+        .suggestion-section {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .suggestion-section:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-section-title {
+            font-size: 10px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-left: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(0, 243, 255, 0.1);
+            border-left-color: var(--accent);
+            color: #fff;
+        }
+
+        .suggestion-item-icon {
+            font-size: 14px;
+            color: var(--accent);
+            opacity: 0.7;
+        }
+
+        .suggestion-item-text {
+            flex: 1;
+            font-size: 11px;
+            color: #ccc;
+        }
+
+        .suggestion-item-meta {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .suggestion-item:hover .suggestion-item-meta {
+            color: var(--accent);
         }
 
         /* Retro Typing Animation */
@@ -441,10 +534,10 @@
             overflow-y: auto;
             overflow-x: hidden;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(calc(260px * var(--card-scale)), calc(280px * var(--card-scale))));
+            grid-template-columns: repeat(auto-fill, minmax(calc(260px * var(--card-scale)), 1fr));
             gap: 30px;
             align-content: start;
-            justify-content: start;
+            justify-content: space-between;
         }
 
         .card {
@@ -1475,7 +1568,10 @@
                 <div class="page-title" id="pageTitle">DASHBOARD<span class="page-subtitle" id="pageSubtitle">/
                         ONLINE</span></div>
                 <div style="display: flex; gap: 15px; align-items: center;">
-                    <div class="search-box"><input type="text" placeholder="SEARCH DATABASE..."></div>
+                    <div class="search-box" id="searchBox">
+                        <input type="text" id="searchInput" placeholder="SEARCH DATABASE..." autocomplete="off">
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
                     <!-- Upload / User Profile Trigger -->
                     <div class="user-profile-box" onclick="openUploadPanel()" title="UPLOAD DATA">
                         <i class="ph ph-user"></i>
@@ -1788,7 +1884,7 @@
         // --- UPLOAD STATE ---
         let uploadedFiles = [];
         let uploadedCover = null;
-        
+
         // --- UPLOADED DATA STORAGE ---
         // Store uploaded items by category and subcategory: { "categoryId-subId": [items...] }
         let uploadedDataStore = {};
@@ -1807,6 +1903,9 @@
                 root.style.setProperty('--card-scale', e.target.value);
             });
 
+            // Initialize search functionality
+            initSearch();
+
             const filterContainer = document.getElementById('filterChecks');
             structure.forEach(group => {
                 group.children.forEach(cat => {
@@ -1819,6 +1918,386 @@
 
             initParticles();
             initUploadForm();
+        }
+
+        // --- SEARCH FUNCTIONALITY ---
+        function initSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            let searchTimeout = null;
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim().toLowerCase();
+
+                clearTimeout(searchTimeout);
+
+                if (query.length === 0) {
+                    searchSuggestions.classList.remove('active');
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    performSearch(query);
+                }, 200);
+            });
+
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim().length > 0) {
+                    searchSuggestions.classList.add('active');
+                }
+            });
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#searchBox')) {
+                    searchSuggestions.classList.remove('active');
+                }
+            });
+
+            // Handle Enter key
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim();
+                    if (query.length > 0) {
+                        executeSearch(query);
+                        searchSuggestions.classList.remove('active');
+                    }
+                } else if (e.key === 'Escape') {
+                    searchSuggestions.classList.remove('active');
+                }
+            });
+        }
+
+        // Get all assets from all categories and subcategories
+        function getAllAssets() {
+            const allAssets = [];
+            
+            structure.forEach(group => {
+                group.children.forEach(category => {
+                    category.subs.forEach(sub => {
+                        // Get generated data for this category/subcategory
+                        const assets = generateData(category, sub);
+                        // Add category and sub info to each asset
+                        assets.forEach(asset => {
+                            allAssets.push({
+                                ...asset,
+                                _category: category,
+                                _sub: sub,
+                                _group: group.group
+                            });
+                        });
+                    });
+                });
+            });
+            
+            return allAssets;
+        }
+
+        function performSearch(query) {
+            const suggestions = [];
+
+            // Search in categories
+            structure.forEach(group => {
+                group.children.forEach(category => {
+                    if (category.name.toLowerCase().includes(query)) {
+                        suggestions.push({
+                            type: 'category',
+                            title: category.name,
+                            category: category,
+                            group: group.group
+                        });
+                    }
+
+                    category.subs.forEach(sub => {
+                        if (sub.name.toLowerCase().includes(query)) {
+                            suggestions.push({
+                                type: 'subcategory',
+                                title: sub.name,
+                                category: category,
+                                sub: sub,
+                                group: group.group
+                            });
+                        }
+
+                        // Search in tags
+                        sub.tags.forEach(tag => {
+                            if (tag.toLowerCase().includes(query)) {
+                                suggestions.push({
+                                    type: 'tag',
+                                    title: tag,
+                                    category: category,
+                                    sub: sub,
+                                    group: group.group
+                                });
+                            }
+                        });
+                    });
+                });
+            });
+
+            // Search in ALL assets from all categories and subcategories
+            const allAssets = getAllAssets();
+            allAssets.forEach(asset => {
+                if (asset.title.toLowerCase().includes(query) ||
+                    asset.tag.toLowerCase().includes(query) ||
+                    (asset.description && asset.description.toLowerCase().includes(query)) ||
+                    asset.type.toLowerCase().includes(query)) {
+                    suggestions.push({
+                        type: 'asset',
+                        title: asset.title,
+                        asset: asset,
+                        category: asset._category,
+                        sub: asset._sub,
+                        group: asset._group
+                    });
+                }
+            });
+
+            displaySearchSuggestions(suggestions, query);
+        }
+
+        function displaySearchSuggestions(suggestions, query) {
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            searchSuggestions.innerHTML = '';
+
+            if (suggestions.length === 0) {
+                searchSuggestions.innerHTML = `
+                    <div class="suggestion-section">
+                        <div class="suggestion-item" style="cursor: default; opacity: 0.5;">
+                            <div class="suggestion-item-text">No results found for "${query}"</div>
+                        </div>
+                    </div>
+                `;
+                searchSuggestions.classList.add('active');
+                return;
+            }
+
+            // Group suggestions by type
+            const grouped = {
+                category: [],
+                subcategory: [],
+                tag: [],
+                asset: []
+            };
+
+            suggestions.forEach(s => {
+                if (grouped[s.type]) {
+                    grouped[s.type].push(s);
+                }
+            });
+
+            // Display categories
+            if (grouped.category.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'suggestion-section';
+                section.innerHTML = '<div class="suggestion-section-title">CATEGORIES</div>';
+
+                grouped.category.slice(0, 3).forEach(item => {
+                    const elem = createSuggestionItem('📁', item.title, item.group, () => {
+                        loadSubCategory(item.category, item.category.subs[0]);
+                        document.getElementById('searchInput').value = '';
+                        searchSuggestions.classList.remove('active');
+                    });
+                    section.appendChild(elem);
+                });
+
+                searchSuggestions.appendChild(section);
+            }
+
+            // Display subcategories
+            if (grouped.subcategory.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'suggestion-section';
+                section.innerHTML = '<div class="suggestion-section-title">SUBCATEGORIES</div>';
+
+                grouped.subcategory.slice(0, 3).forEach(item => {
+                    const elem = createSuggestionItem('📂', item.title, `${item.category.name} / ${item.sub.name}`, () => {
+                        loadSubCategory(item.category, item.sub);
+                        document.getElementById('searchInput').value = '';
+                        searchSuggestions.classList.remove('active');
+                    });
+                    section.appendChild(elem);
+                });
+
+                searchSuggestions.appendChild(section);
+            }
+
+            // Display tags
+            if (grouped.tag.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'suggestion-section';
+                section.innerHTML = '<div class="suggestion-section-title">TAGS</div>';
+
+                // Remove duplicates
+                const uniqueTags = [...new Set(grouped.tag.map(t => t.title))];
+                uniqueTags.slice(0, 5).forEach(tagName => {
+                    const item = grouped.tag.find(t => t.title === tagName);
+                    const elem = createSuggestionItem('🏷️', tagName, `Filter by tag`, () => {
+                        if (item.category && item.sub) {
+                            loadSubCategory(item.category, item.sub);
+                            // Filter by tag
+                            setTimeout(() => {
+                                const filtered = currentAssets.filter(a => a.tag === tagName.toUpperCase());
+                                renderGrid(filtered);
+                                // Update filter chips
+                                document.querySelectorAll('.filter-chip').forEach(c => {
+                                    c.classList.remove('active');
+                                    if (c.innerText === tagName) {
+                                        c.classList.add('active');
+                                    }
+                                });
+                            }, 100);
+                        }
+                        document.getElementById('searchInput').value = '';
+                        searchSuggestions.classList.remove('active');
+                    });
+                    section.appendChild(elem);
+                });
+
+                searchSuggestions.appendChild(section);
+            }
+
+            // Display assets
+            if (grouped.asset.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'suggestion-section';
+                section.innerHTML = '<div class="suggestion-section-title">ASSETS</div>';
+
+                grouped.asset.slice(0, 5).forEach(item => {
+                    const typeIcon = item.asset.type === 'image' ? '🖼️' :
+                        item.asset.type === 'video' ? '🎬' :
+                            item.asset.type === 'audio' ? '🎵' :
+                                item.asset.type === 'model' ? '📦' :
+                                    item.asset.type === 'pdf' ? '📄' : '📎';
+                    const categoryInfo = item.category && item.sub ? `${item.category.name} / ${item.sub.name}` : '';
+                    const meta = categoryInfo ? `${item.asset.type.toUpperCase()} • ${categoryInfo}` : `${item.asset.type.toUpperCase()} • ${item.asset.size}`;
+                    const elem = createSuggestionItem(typeIcon, item.title, meta, () => {
+                        if (item.category && item.sub) {
+                            loadSubCategory(item.category, item.sub);
+                            setTimeout(() => {
+                                openModal(item.asset);
+                            }, 200);
+                        }
+                        document.getElementById('searchInput').value = '';
+                        searchSuggestions.classList.remove('active');
+                    });
+                    section.appendChild(elem);
+                });
+
+                searchSuggestions.appendChild(section);
+            }
+
+            searchSuggestions.classList.add('active');
+        }
+
+        function createSuggestionItem(icon, title, meta, onClick) {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `
+                <div class="suggestion-item-icon">${icon}</div>
+                <div class="suggestion-item-text">${title}</div>
+                <div class="suggestion-item-meta">${meta}</div>
+            `;
+            item.onclick = onClick;
+            return item;
+        }
+
+        function executeSearch(query) {
+            // Perform full search across ALL assets from all categories
+            const allAssets = getAllAssets();
+            const filtered = allAssets.filter(asset => {
+                return asset.title.toLowerCase().includes(query) ||
+                    asset.tag.toLowerCase().includes(query) ||
+                    (asset.description && asset.description.toLowerCase().includes(query)) ||
+                    asset.type.toLowerCase().includes(query);
+            });
+
+            if (filtered.length > 0) {
+                // Store search results with category info for navigation
+                const searchResults = filtered.map(asset => ({
+                    ...asset,
+                    _category: asset._category,
+                    _sub: asset._sub,
+                    _group: asset._group
+                }));
+                
+                // Render search results
+                renderSearchResults(searchResults);
+            } else {
+                // Show message if no results
+                const grid = document.getElementById('grid');
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">🔍</div>
+                        <div style="font-size: 14px; color: var(--accent); margin-bottom: 10px;">NO RESULTS FOUND</div>
+                        <div style="font-size: 11px;">Try searching for categories, tags, or asset names</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderSearchResults(results) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            // Update page title to show search results
+            document.getElementById('pageTitle').innerHTML = `SEARCH RESULTS<span class="page-subtitle">/ ${results.length} ITEMS</span>`;
+            
+            // Group results by category for better organization
+            const grouped = {};
+            results.forEach(asset => {
+                const key = `${asset._category.name} / ${asset._sub.name}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        category: asset._category,
+                        sub: asset._sub,
+                        assets: []
+                    };
+                }
+                grouped[key].assets.push(asset);
+            });
+
+            // Render each group
+            Object.keys(grouped).forEach(groupKey => {
+                const group = grouped[groupKey];
+                
+                // Add category header
+                const header = document.createElement('div');
+                header.style.cssText = 'grid-column: 1 / -1; padding: 20px 0 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;';
+                header.innerHTML = `
+                    <div style="font-size: 12px; color: var(--accent); letter-spacing: 2px; margin-bottom: 5px;">${group.category.name} / ${group.sub.name}</div>
+                    <div style="font-size: 10px; color: #666;">${group.assets.length} item(s)</div>
+                `;
+                grid.appendChild(header);
+                
+                // Render assets in this group
+                group.assets.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.animation = `slideDown 0.4s ease-out ${index * 0.05}s backwards`;
+                    card.onclick = () => {
+                        // Navigate to the category first, then open modal
+                        loadSubCategory(group.category, group.sub);
+                        setTimeout(() => {
+                            openModal(item);
+                        }, 300);
+                    };
+                    
+                    let typeBadge = item.type.toUpperCase();
+                    if (item.type === 'gallery') typeBadge = 'GALLERY (' + item.sources.length + ')';
+
+                    card.innerHTML = `
+                        <div class="card-type-badge">${typeBadge}</div>
+                        <div class="card-cover"><div class="card-scan"></div><img src="${item.thumbnail}" class="card-img" loading="lazy"></div>
+                        <div class="card-body">
+                            <div class="card-title">${item.title}</div>
+                            <div class="tag-row"><span class="tag-tiny">${item.tag}</span><span class="tag-tiny">SECURE</span></div>
+                            <div class="card-footer"><div>SIZE<span class="stat-val">${item.size}</span></div><div>VER<span class="stat-val">${item.ver}</span></div></div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
         }
 
         function renderSidebar() {
@@ -1865,7 +2344,7 @@
             root.style.setProperty('--accent', parent.color);
             root.style.setProperty('--border-glow', parent.color + '66');
             document.getElementById('pageTitle').innerHTML = `${parent.name}<span class="page-subtitle">/ ${sub.name}</span>`;
-            
+
             // Expand the parent category in sidebar
             document.querySelectorAll('.nav-parent').forEach(p => {
                 const headerText = p.querySelector('.nav-parent-header span')?.innerText;
@@ -1875,7 +2354,7 @@
                     p.classList.remove('expanded', 'active-parent');
                 }
             });
-            
+
             document.querySelectorAll('.nav-sub-item').forEach(el => {
                 el.classList.remove('active');
                 if (el.innerText === sub.name) el.classList.add('active');
@@ -2118,7 +2597,7 @@
 
             // Use the actual model URL from item.sources
             const modelUrl = item.sources && item.sources.length > 0 ? item.sources[0] : null;
-            
+
             if (!modelUrl) {
                 container.innerHTML = '<div style="color: #ff0055; padding: 20px; text-align: center;">>> ERROR: MODEL SOURCE NOT FOUND</div>';
                 return;
@@ -2129,7 +2608,7 @@
             let fileName = '';
             if (item.originalFileName) {
                 fileName = item.originalFileName.toLowerCase();
-            } else if (item.title && (item.title.includes('.glb') || item.title.includes('.gltf') || 
+            } else if (item.title && (item.title.includes('.glb') || item.title.includes('.gltf') ||
                 item.title.includes('.obj') || item.title.includes('.fbx'))) {
                 fileName = item.title.toLowerCase();
             } else if (typeof modelUrl === 'string') {
@@ -2137,7 +2616,7 @@
                 fileName = modelUrl.toLowerCase();
             }
             const isGLB = fileName.endsWith('.glb') || fileName.endsWith('.gltf');
-            
+
             if (isGLB) {
                 // Use model-viewer for GLB/GLTF files (best support)
                 const modelViewer = document.createElement('model-viewer');
@@ -2748,7 +3227,7 @@
                 newInput.id = 'coverInput';
                 newInput.style.display = 'none';
                 newInput.accept = 'image/*';
-                newInput.onchange = function() { handleCoverSelect(this); };
+                newInput.onchange = function () { handleCoverSelect(this); };
                 coverDrop.appendChild(newInput);
             }
         }
@@ -2809,7 +3288,7 @@
                     newInput.id = 'coverInput';
                     newInput.style.display = 'none';
                     newInput.accept = 'image/*';
-                    newInput.onchange = function() { handleCoverSelect(this); };
+                    newInput.onchange = function () { handleCoverSelect(this); };
                     coverDrop.appendChild(newInput);
                 }
                 updatePreview();
@@ -2910,9 +3389,9 @@
             const firstFile = uploadedFiles[0];
             const fileName = firstFile.name.toLowerCase();
             const fileType = firstFile.type.toLowerCase();
-            
+
             // Model files (3D)
-            if (fileName.endsWith('.glb') || fileName.endsWith('.gltf') || 
+            if (fileName.endsWith('.glb') || fileName.endsWith('.gltf') ||
                 fileName.endsWith('.obj') || fileName.endsWith('.fbx') ||
                 fileName.endsWith('.dae') || fileName.endsWith('.3ds') ||
                 fileName.endsWith('.ply') || fileName.endsWith('.stl')) {
@@ -2934,16 +3413,16 @@
             else if (fileName.endsWith('.pdf') || fileType.includes('pdf')) {
                 type = 'pdf';
             }
-            else if (fileName.endsWith('.txt') || fileName.endsWith('.log') || 
-                     fileType.includes('text/plain')) {
+            else if (fileName.endsWith('.txt') || fileName.endsWith('.log') ||
+                fileType.includes('text/plain')) {
                 type = 'txt';
             }
             else if (fileName.endsWith('.doc') || fileName.endsWith('.docx') ||
-                     fileType.includes('msword') || fileType.includes('wordprocessingml')) {
+                fileType.includes('msword') || fileType.includes('wordprocessingml')) {
                 type = 'doc';
             }
             else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx') ||
-                     fileType.includes('spreadsheet')) {
+                fileType.includes('spreadsheet')) {
                 type = 'doc';
             }
             // Default to doc for unknown types
@@ -2990,7 +3469,7 @@
                 // Store original file names for proper type detection
                 originalFileName: firstFile.name
             };
-            
+
             // Add model-specific metadata if available
             if (type === 'model') {
                 // These could be extracted from the model file if needed
@@ -3007,7 +3486,7 @@
 
             // Navigate to the target category if not already there
             const isCurrentCategory = currentSub && currentSub.id === sub.id && currentParent && currentParent.id === category.id;
-            
+
             if (!isCurrentCategory) {
                 // Navigate to the target category
                 loadSubCategory(category, sub);
@@ -3018,7 +3497,7 @@
             }
 
             closeUploadPanel();
-            
+
             // Scroll to top of grid to show the newly uploaded item
             setTimeout(() => {
                 const grid = document.getElementById('grid');
@@ -3035,7 +3514,7 @@
                     }, 2000);
                 }
             }, 100);
-            
+
             alert(`>> UPLOAD COMPLETE: ${uploadedFiles.length} FILE(S) -> 1 ASSET CREATED`);
         }
 
