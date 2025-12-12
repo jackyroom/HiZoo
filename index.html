@@ -1788,6 +1788,10 @@
         // --- UPLOAD STATE ---
         let uploadedFiles = [];
         let uploadedCover = null;
+        
+        // --- UPLOADED DATA STORAGE ---
+        // Store uploaded items by category and subcategory: { "categoryId-subId": [items...] }
+        let uploadedDataStore = {};
 
         function init() {
             renderSidebar();
@@ -1861,6 +1865,17 @@
             root.style.setProperty('--accent', parent.color);
             root.style.setProperty('--border-glow', parent.color + '66');
             document.getElementById('pageTitle').innerHTML = `${parent.name}<span class="page-subtitle">/ ${sub.name}</span>`;
+            
+            // Expand the parent category in sidebar
+            document.querySelectorAll('.nav-parent').forEach(p => {
+                const headerText = p.querySelector('.nav-parent-header span')?.innerText;
+                if (headerText === parent.name) {
+                    p.classList.add('expanded', 'active-parent');
+                } else {
+                    p.classList.remove('expanded', 'active-parent');
+                }
+            });
+            
             document.querySelectorAll('.nav-sub-item').forEach(el => {
                 el.classList.remove('active');
                 if (el.innerText === sub.name) el.classList.add('active');
@@ -1872,6 +1887,12 @@
 
         function generateData(parent, sub) {
             const arr = [];
+            // First, add uploaded items for this category/subcategory
+            const storeKey = `${parent.id}-${sub.id}`;
+            if (uploadedDataStore[storeKey] && uploadedDataStore[storeKey].length > 0) {
+                arr.push(...uploadedDataStore[storeKey]);
+            }
+            // Then add generated mock data
             for (let i = 0; i < 6; i++) {
                 const tag = sub.tags[i % sub.tags.length];
                 let type = 'image';
@@ -2095,31 +2116,74 @@
         function render3DModel(container, item) {
             container.innerHTML = '';
 
-            // Use a mock GLB model URL for demonstration
-            // In production, this would come from item.sources or a real model URL
-            const modelUrl = 'https://modelviewer.dev/shared-assets/models/RobotExpressive.glb';
+            // Use the actual model URL from item.sources
+            const modelUrl = item.sources && item.sources.length > 0 ? item.sources[0] : null;
+            
+            if (!modelUrl) {
+                container.innerHTML = '<div style="color: #ff0055; padding: 20px; text-align: center;">>> ERROR: MODEL SOURCE NOT FOUND</div>';
+                return;
+            }
 
-            // Create model-viewer element
-            const modelViewer = document.createElement('model-viewer');
-            modelViewer.setAttribute('src', modelUrl);
-            modelViewer.setAttribute('alt', item.title);
-            modelViewer.setAttribute('camera-controls', '');
-            modelViewer.setAttribute('auto-rotate', '');
-            modelViewer.setAttribute('shadow-intensity', '1');
-            modelViewer.setAttribute('shadow-softness', '0.5');
-            modelViewer.setAttribute('exposure', '1');
-            modelViewer.setAttribute('environment-image', 'neutral');
-            modelViewer.setAttribute('camera-orbit', '45deg 55deg 4.5m');
-            modelViewer.setAttribute('min-camera-orbit', 'auto auto auto');
-            modelViewer.setAttribute('max-camera-orbit', 'auto auto auto');
-            modelViewer.setAttribute('loading', 'eager');
-            modelViewer.style.width = '100%';
-            modelViewer.style.height = '100%';
-            // Cyberpunk-style gradient background instead of pure black
-            modelViewer.style.background = 'radial-gradient(circle at center, #1a1a2e 0%, #0a0a15 100%)';
+            // Check if model-viewer supports this format (GLB/GLTF work best)
+            // For blob URLs, check the original filename from item if available
+            let fileName = '';
+            if (item.originalFileName) {
+                fileName = item.originalFileName.toLowerCase();
+            } else if (item.title && (item.title.includes('.glb') || item.title.includes('.gltf') || 
+                item.title.includes('.obj') || item.title.includes('.fbx'))) {
+                fileName = item.title.toLowerCase();
+            } else if (typeof modelUrl === 'string') {
+                // Try to extract from URL if it's not a blob URL
+                fileName = modelUrl.toLowerCase();
+            }
+            const isGLB = fileName.endsWith('.glb') || fileName.endsWith('.gltf');
+            
+            if (isGLB) {
+                // Use model-viewer for GLB/GLTF files (best support)
+                const modelViewer = document.createElement('model-viewer');
+                modelViewer.setAttribute('src', modelUrl);
+                modelViewer.setAttribute('alt', item.title);
+                modelViewer.setAttribute('camera-controls', '');
+                modelViewer.setAttribute('auto-rotate', '');
+                modelViewer.setAttribute('shadow-intensity', '1');
+                modelViewer.setAttribute('shadow-softness', '0.5');
+                modelViewer.setAttribute('exposure', '1');
+                modelViewer.setAttribute('environment-image', 'neutral');
+                modelViewer.setAttribute('camera-orbit', '45deg 55deg 4.5m');
+                modelViewer.setAttribute('min-camera-orbit', 'auto auto auto');
+                modelViewer.setAttribute('max-camera-orbit', 'auto auto auto');
+                modelViewer.setAttribute('loading', 'eager');
+                modelViewer.style.width = '100%';
+                modelViewer.style.height = '100%';
+                modelViewer.style.background = 'radial-gradient(circle at center, #1a1a2e 0%, #0a0a15 100%)';
 
-            container.appendChild(modelViewer);
-            currentModelViewer = modelViewer;
+                container.appendChild(modelViewer);
+                currentModelViewer = modelViewer;
+            } else {
+                // For other formats (OBJ, FBX, etc.), show download option or use Three.js
+                // For now, show a message with download option
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 40px; text-align: center;';
+                wrapper.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">📦</div>
+                    <div style="font-size: 18px; color: var(--accent); margin-bottom: 10px;">3D MODEL DETECTED</div>
+                    <div style="font-size: 12px; color: #888; margin-bottom: 30px;">Format: ${fileName ? fileName.split('.').pop().toUpperCase() : 'UNKNOWN'}</div>
+                    <div style="font-size: 11px; color: #666; margin-bottom: 20px;">Model viewer supports GLB/GLTF formats.<br>For other formats, please download the file.</div>
+                    <a href="${modelUrl}" download="${item.title}" style="
+                        display: inline-block;
+                        padding: 12px 24px;
+                        background: var(--accent);
+                        color: #000;
+                        text-decoration: none;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        font-size: 11px;
+                        letter-spacing: 1px;
+                    ">DOWNLOAD MODEL</a>
+                `;
+                container.appendChild(wrapper);
+                currentModelViewer = null;
+            }
 
             // Handle Resize with ResizeObserver
             const resizeObserver = new ResizeObserver(() => {
@@ -2486,11 +2550,40 @@
                     container.appendChild(element);
                 }
                 else if (item.type === 'pdf') {
-                    // ... (keep pdf logic)
+                    // PDF preview using iframe
                     element = document.createElement('iframe');
                     element.className = 'pdf-frame media-object active';
                     element.src = src + '#toolbar=0&navpanes=0';
+                    element.style.width = '100%';
+                    element.style.height = '100%';
+                    element.style.border = 'none';
                     container.appendChild(element);
+                }
+                else if (item.type === 'doc') {
+                    // Document files - show download option or preview if possible
+                    const wrap = document.createElement('div');
+                    wrap.className = 'media-object active';
+                    wrap.style.cssText = 'width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 40px; text-align: center;';
+                    const fileName = src.split('/').pop() || item.title;
+                    const fileExt = fileName.split('.').pop().toUpperCase();
+                    wrap.innerHTML = `
+                        <div style="font-size: 48px; margin-bottom: 20px;">📄</div>
+                        <div style="font-size: 18px; color: var(--accent); margin-bottom: 10px;">DOCUMENT FILE</div>
+                        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">${fileName}</div>
+                        <div style="font-size: 11px; color: #666; margin-bottom: 30px;">Format: ${fileExt}</div>
+                        <a href="${src}" download="${fileName}" style="
+                            display: inline-block;
+                            padding: 12px 24px;
+                            background: var(--accent);
+                            color: #000;
+                            text-decoration: none;
+                            border-radius: 4px;
+                            font-weight: bold;
+                            font-size: 11px;
+                            letter-spacing: 1px;
+                        ">DOWNLOAD DOCUMENT</a>
+                    `;
+                    container.appendChild(wrap);
                 }
                 else if (item.type === 'txt') {
                     // ... (keep txt logic)
@@ -2510,8 +2603,11 @@
                     wrap.className = 'media-object active';
                     wrap.style.width = '100%';
                     wrap.style.height = '100%';
+                    wrap.style.minHeight = '500px';
                     container.appendChild(wrap);
-                    setTimeout(() => render3DModel(wrap, item), 100);
+                    // Pass the current source to render3DModel
+                    const modelItem = { ...item, sources: [src] };
+                    setTimeout(() => render3DModel(wrap, modelItem), 100);
                 }
                 else if (item.type === 'audio') {
                     const wrap = document.createElement('div');
@@ -2809,16 +2905,76 @@
             // Create blob URLs for all files
             const blobSources = uploadedFiles.map(file => URL.createObjectURL(file));
 
-            // Determine primary type (from first file)
+            // Determine primary type (from first file) - Enhanced detection
             let type = 'doc';
             const firstFile = uploadedFiles[0];
-            if (firstFile.type.startsWith('image')) type = uploadedFiles.length > 1 ? 'gallery' : 'image';
-            if (firstFile.type.startsWith('video')) type = 'video';
-            if (firstFile.type.startsWith('audio')) type = 'audio';
-            if (firstFile.name.endsWith('.glb') || firstFile.name.endsWith('.obj')) type = 'model';
+            const fileName = firstFile.name.toLowerCase();
+            const fileType = firstFile.type.toLowerCase();
+            
+            // Model files (3D)
+            if (fileName.endsWith('.glb') || fileName.endsWith('.gltf') || 
+                fileName.endsWith('.obj') || fileName.endsWith('.fbx') ||
+                fileName.endsWith('.dae') || fileName.endsWith('.3ds') ||
+                fileName.endsWith('.ply') || fileName.endsWith('.stl')) {
+                type = 'model';
+            }
+            // Image files
+            else if (fileType.startsWith('image/')) {
+                type = uploadedFiles.length > 1 ? 'gallery' : 'image';
+            }
+            // Video files
+            else if (fileType.startsWith('video/')) {
+                type = 'video';
+            }
+            // Audio files
+            else if (fileType.startsWith('audio/')) {
+                type = 'audio';
+            }
+            // Document files
+            else if (fileName.endsWith('.pdf') || fileType.includes('pdf')) {
+                type = 'pdf';
+            }
+            else if (fileName.endsWith('.txt') || fileName.endsWith('.log') || 
+                     fileType.includes('text/plain')) {
+                type = 'txt';
+            }
+            else if (fileName.endsWith('.doc') || fileName.endsWith('.docx') ||
+                     fileType.includes('msword') || fileType.includes('wordprocessingml')) {
+                type = 'doc';
+            }
+            else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx') ||
+                     fileType.includes('spreadsheet')) {
+                type = 'doc';
+            }
+            // Default to doc for unknown types
+            else {
+                type = 'doc';
+            }
 
             // Calculate total size
             const totalSize = uploadedFiles.reduce((acc, f) => acc + f.size, 0);
+
+            // Generate appropriate thumbnail based on type
+            let thumbnail = uploadedCover;
+            if (!thumbnail) {
+                if (type === 'image' || type === 'gallery') {
+                    thumbnail = blobSources[0];
+                } else if (type === 'model') {
+                    // Use a placeholder for 3D models, or try to use cover if available
+                    thumbnail = uploadedCover || `https://placehold.co/600x400/1a1a2e/00f3ff?text=3D+MODEL&font=monospace`;
+                } else if (type === 'video') {
+                    // Try to create a thumbnail from video (first frame)
+                    thumbnail = `https://placehold.co/600x400/000/00f3ff?text=VIDEO&font=monospace`;
+                } else if (type === 'audio') {
+                    thumbnail = `https://placehold.co/600x400/101015/ff0055?text=AUDIO&font=monospace`;
+                } else if (type === 'pdf') {
+                    thumbnail = `https://placehold.co/600x400/1a1a1a/FFF?text=PDF+DOC`;
+                } else if (type === 'txt') {
+                    thumbnail = `https://placehold.co/600x400/000/00f3ff?text=TXT+LOG&font=monospace`;
+                } else {
+                    thumbnail = `https://placehold.co/600x400/000/00f3ff?text=${type.toUpperCase()}`;
+                }
+            }
 
             // Create ONE item with all sources
             const newItem = {
@@ -2827,21 +2983,59 @@
                 size: (totalSize / 1024 / 1024).toFixed(2) + ' MB',
                 ver: 'v.1.0',
                 type: type,
-                thumbnail: uploadedCover || (type === 'image' || type === 'gallery' ? blobSources[0] : `https://placehold.co/600x400/000/00f3ff?text=${type.toUpperCase()}`),
+                thumbnail: thumbnail,
                 sources: blobSources,
                 description: userDesc || undefined,
-                duration: (type === 'audio') ? 0 : undefined
+                duration: (type === 'audio') ? 0 : undefined,
+                // Store original file names for proper type detection
+                originalFileName: firstFile.name
             };
+            
+            // Add model-specific metadata if available
+            if (type === 'model') {
+                // These could be extracted from the model file if needed
+                newItem.vertCount = 0; // Could be calculated from model
+                newItem.polyCount = 0; // Could be calculated from model
+            }
 
-            // Add to current data
-            if (currentSub && currentSub.name === sub.name) {
-                currentAssets.unshift(newItem);
-                renderGrid(currentAssets);
+            // Store the uploaded item
+            const storeKey = `${category.id}-${sub.id}`;
+            if (!uploadedDataStore[storeKey]) {
+                uploadedDataStore[storeKey] = [];
+            }
+            uploadedDataStore[storeKey].unshift(newItem);
+
+            // Navigate to the target category if not already there
+            const isCurrentCategory = currentSub && currentSub.id === sub.id && currentParent && currentParent.id === category.id;
+            
+            if (!isCurrentCategory) {
+                // Navigate to the target category
+                loadSubCategory(category, sub);
             } else {
-                console.log(`Uploaded "${customTitle}" to ${category.name}/${sub.name}`);
+                // Already in the target category, just refresh the grid
+                currentAssets = generateData(category, sub);
+                renderGrid(currentAssets);
             }
 
             closeUploadPanel();
+            
+            // Scroll to top of grid to show the newly uploaded item
+            setTimeout(() => {
+                const grid = document.getElementById('grid');
+                if (grid && grid.firstChild) {
+                    grid.firstChild.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Add a highlight effect to the first card (newly uploaded)
+                    grid.firstChild.style.outline = '2px solid var(--accent)';
+                    grid.firstChild.style.outlineOffset = '4px';
+                    setTimeout(() => {
+                        if (grid.firstChild) {
+                            grid.firstChild.style.outline = '';
+                            grid.firstChild.style.outlineOffset = '';
+                        }
+                    }, 2000);
+                }
+            }, 100);
+            
             alert(`>> UPLOAD COMPLETE: ${uploadedFiles.length} FILE(S) -> 1 ASSET CREATED`);
         }
 
