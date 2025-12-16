@@ -13,14 +13,16 @@ function generate3DThumbnail(seed) {
     return modelPreviews[seed % modelPreviews.length];
 }
 
+import { assetsStore } from '../store/assets.store.js';
+
 export function generateData(parent, sub, uploadedDataStore = {}) {
     const arr = [];
-    // First, add uploaded items for this category/subcategory
+    // First, add uploaded/moved items for this category/subcategory
     const storeKey = `${parent.id}-${sub.id}`;
     if (uploadedDataStore[storeKey] && uploadedDataStore[storeKey].length > 0) {
         arr.push(...uploadedDataStore[storeKey]);
     }
-    // Then add generated mock data
+    // Then add generated mock data（排除已经被移动走的 mock 卡片）
     for (let i = 0; i < 6; i++) {
         const tag = sub.tags[i % sub.tags.length];
         let type = 'image';
@@ -73,7 +75,14 @@ export function generateData(parent, sub, uploadedDataStore = {}) {
             thumb = `https://placehold.co/400x300/101015/ff0055?text=AUDIO+WAVE&font=monospace`;
         }
 
+        const mockId = `${parent.id}-${sub.id}-mock-${i}`;
+        if (assetsStore.isMockRemoved(parent.id, sub.id, mockId)) {
+            continue;
+        }
+
         const entry = {
+            id: mockId,
+            sourceType: 'mock',
             title: `${sub.name}_${type.toUpperCase()}_${i + 100}`,
             type: type,
             thumbnail: thumb,

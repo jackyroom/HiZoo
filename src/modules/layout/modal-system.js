@@ -20,7 +20,7 @@ export function openModal(item) {
     if (modalTitle) modalTitle.innerText = item.title;
     if (modalSize) modalSize.innerText = item.size;
     if (modalVer) modalVer.innerText = item.ver;
-    if (modalType) modalType.innerText = item.type.toUpperCase();
+    if (modalType) modalType.innerText = (item.type === 'download' ? '下载' : item.type === 'model' ? '模型' : item.type === 'audio' ? '音频' : item.type === 'video' ? '视频' : item.type === 'image' ? '图片' : item.type === 'gallery' ? '画廊' : item.type === 'pdf' ? 'PDF' : item.type === 'txt' ? '文本' : '资源');
 
     const btnPrev = document.getElementById('btnPrev');
     const btnNext = document.getElementById('btnNext');
@@ -51,33 +51,33 @@ export function openModal(item) {
     if (item.type === 'model') {
         if (modalSize) {
             const parent = modalSize.parentElement;
-            if (parent && parent.children[0]) parent.children[0].innerText = 'VERTICES';
+            if (parent && parent.children[0]) parent.children[0].innerText = '顶点数';
             modalSize.innerText = item.vertCount?.toLocaleString() || '0';
         }
         if (modalVer) {
             const parent = modalVer.parentElement;
-            if (parent && parent.children[0]) parent.children[0].innerText = 'FACES';
+            if (parent && parent.children[0]) parent.children[0].innerText = '面数';
             modalVer.innerText = item.vertCount?.toLocaleString() || '0';
         }
     } else if (item.type === 'audio') {
         if (modalSize) {
             const parent = modalSize.parentElement;
-            if (parent && parent.children[0]) parent.children[0].innerText = 'DURATION';
+            if (parent && parent.children[0]) parent.children[0].innerText = '时长';
             modalSize.innerText = item.duration ? formatTime(item.duration) : '--:--';
         }
         if (modalVer) {
             const parent = modalVer.parentElement;
-            if (parent && parent.children[0]) parent.children[0].innerText = 'FORMAT';
+            if (parent && parent.children[0]) parent.children[0].innerText = '格式';
             modalVer.innerText = item.bitrate || 'OGG';
         }
     } else {
         if (modalSize) {
             const parent = modalSize.parentElement;
-            if (parent && parent.children[0]) parent.children[0].innerText = 'SIZE';
+            if (parent && parent.children[0]) parent.children[0].innerText = '大小';
         }
         if (modalVer) {
             const parent = modalVer.parentElement;
-            if (parent && parent.children[0]) parent.children[0].innerText = 'VERSION';
+            if (parent && parent.children[0]) parent.children[0].innerText = '版本';
         }
     }
 
@@ -117,7 +117,7 @@ export function closeModal() {
     const modalPanel = document.getElementById('modalPanel');
     if (modalPanel) modalPanel.classList.remove('expanded');
     const expandBtn = document.querySelector('.expand-btn');
-    if (expandBtn) expandBtn.innerText = "EXPAND";
+    if (expandBtn) expandBtn.innerText = "全屏";
     
     uiStore.setActiveItem(null, 0);
     
@@ -139,7 +139,7 @@ export function toggleFullscreen() {
     
     if (btn) {
         const isExpanded = modalPanel.classList.contains('expanded');
-        btn.innerText = isExpanded ? "SHRINK" : "EXPAND";
+        btn.innerText = isExpanded ? "退出全屏" : "全屏";
     }
 }
 

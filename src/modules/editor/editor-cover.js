@@ -16,7 +16,7 @@ export function handleArticleCoverSelect(input) {
         
         if (previewImg) previewImg.src = articleCoverData;
         if (preview) preview.style.display = 'block';
-        if (coverText) coverText.innerText = 'COVER UPLOADED';
+        if (coverText) coverText.innerText = '封面已上传';
         if (coverDrop) {
             coverDrop.style.backgroundImage = `url(${articleCoverData})`;
             coverDrop.style.backgroundSize = 'cover';
@@ -34,7 +34,7 @@ export function clearArticleCover() {
     const coverInput = document.getElementById('artCoverInput');
     
     if (preview) preview.style.display = 'none';
-    if (coverText) coverText.innerText = 'CLICK TO UPLOAD COVER';
+    if (coverText) coverText.innerText = '点击上传封面';
     if (coverDrop) coverDrop.style.backgroundImage = 'none';
     if (coverInput) coverInput.value = '';
 }

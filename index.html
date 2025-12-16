@@ -34,18 +34,18 @@
 
         <main class="main">
             <header class="header">
-                <div class="page-title" id="pageTitle">DASHBOARD<span class="page-subtitle" id="pageSubtitle">/
-                        ONLINE</span></div>
+                <div class="page-title" id="pageTitle">仪表盘<span class="page-subtitle" id="pageSubtitle">/
+                        在线</span></div>
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <div class="search-box" id="searchBox">
-                        <input type="text" id="searchInput" placeholder="SEARCH DATABASE..." autocomplete="off">
+                        <input type="text" id="searchInput" placeholder="搜索数据库..." autocomplete="off">
                         <div class="search-suggestions" id="searchSuggestions"></div>
                     </div>
                     <!-- Upload / User Profile Trigger -->
-                    <div class="user-profile-box" onclick="openUploadPanel()" title="UPLOAD DATA">
+                    <div class="user-profile-box" onclick="openUploadPanel()" title="上传资源">
                         <i class="ph ph-upload-simple"></i>
                     </div>
-                    <div class="user-profile-box" onclick="openEditor()" title="WRITE ARTICLE"
+                    <div class="user-profile-box" onclick="openEditor()" title="撰写文章"
                         style="border-color: var(--c-green); color: var(--c-green);">
                         <i class="ph ph-pencil-simple"></i>
                     </div>
@@ -77,7 +77,7 @@
             </div>
 
             <div class="setting-group">
-                <div class="setting-label"><span>IMAGE SIZE</span><span id="valSize">40px</span></div>
+                <div class="setting-label"><span>图片尺寸</span><span id="valSize">40px</span></div>
                 <input type="range" id="setImgSize" min="20" max="100" value="40" oninput="updateGraphSettings()">
             </div>
 
@@ -109,7 +109,7 @@
                     style="width:100%; border:none; height:25px; cursor:pointer;" onchange="updateGraphBg()">
             </div>
 
-            <div class="exit-neural-btn">EXIT SYSTEM</div>
+            <div class="exit-neural-btn">退出系统</div>
         </div>
     </div>
 
@@ -126,7 +126,7 @@
                 <div class="cyber-loader" id="mediaLoader">
                     <div class="loader-box">
                         <div class="loader-text-row">
-                            <span>LOADING DATA...</span>
+                            <span>数据加载中...</span>
                             <span id="loadPercent">0%</span>
                         </div>
                         <div class="loader-bar-container">
@@ -146,27 +146,26 @@
             </div>
 
             <div class="modal-info">
-                <div style="color:var(--accent); font-size:11px; letter-spacing:2px; margin-bottom:8px;">CLASSIFIED
-                    ASSET</div>
+                <div style="color:var(--accent); font-size:11px; letter-spacing:2px; margin-bottom:8px;">机密资源</div>
                 <div style="font-size:24px; font-weight:800; line-height:1.2; color:#fff; text-shadow: 0 0 10px rgba(255,255,255,0.2); margin-bottom: 20px; word-break: break-all;"
-                    id="modalTitle">Title</div>
+                    id="modalTitle">标题</div>
                 <div
                     style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
                     <div>
-                        <div style="color:#666; font-size:10px;">SIZE</div>
+                        <div style="color:#666; font-size:10px;">大小</div>
                         <div class="stat-val" id="modalSize" style="margin-left:0; font-size:14px;">0MB</div>
                     </div>
                     <div>
-                        <div style="color:#666; font-size:10px;">VERSION</div>
+                        <div style="color:#666; font-size:10px;">版本</div>
                         <div class="stat-val" id="modalVer" style="margin-left:0; font-size:14px;">v.1.0</div>
                     </div>
                     <div>
-                        <div style="color:#666; font-size:10px;">STATUS</div>
-                        <div style="color:var(--c-green); font-weight:bold; font-size:14px;">ACTIVE</div>
+                        <div style="color:#666; font-size:10px;">状态</div>
+                        <div style="color:var(--c-green); font-weight:bold; font-size:14px;">启用</div>
                     </div>
                     <div>
-                        <div style="color:#666; font-size:10px;">FORMAT</div>
-                        <div class="stat-val" id="modalType" style="margin-left:0; font-size:14px; color:#fff;">DATA
+                        <div style="color:#666; font-size:10px;">格式</div>
+                        <div class="stat-val" id="modalType" style="margin-left:0; font-size:14px; color:#fff;">资源
                         </div>
                     </div>
                 </div>
@@ -176,7 +175,7 @@
                     <p>Asset verified. Security checksum valid. Contains high-resolution visual data and telemetry logs
                         from the targeted sector.</p>
                 </div>
-                <div class="cyber-btn">INITIATE DOWNLOAD</div>
+                <div class="cyber-btn">开始下载</div>
             </div>
         </div>
     </div>
@@ -185,7 +184,7 @@
     <!-- Upload Panel (Redesigned) -->
     <div class="upload-panel" id="uploadPanel">
         <div class="up-header">
-            <span>// UPLOAD_DATA_PACKET</span>
+            <span>// 上传数据包</span>
             <span style="cursor:pointer; color:var(--c-alert);" onclick="closeUploadPanel()">×</span>
         </div>
 
@@ -193,39 +192,39 @@
             <!-- LEFT: FORM -->
             <div class="up-left-col">
                 <div class="form-group">
-                    <div class="form-label">Title</div>
-                    <input type="text" id="upTitle" class="cyber-input" placeholder="AUTO_EXTRACTED_FROM_FILENAME"
+                    <div class="form-label">标题</div>
+                    <input type="text" id="upTitle" class="cyber-input" placeholder="自动从文件名提取"
                         oninput="updatePreview()">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top:20px;">
                     <div class="form-group">
-                        <div class="form-label">Category</div>
+                        <div class="form-label">分类</div>
                         <select id="upCategory" class="cyber-input"
                             onchange="updateSubCats(); updatePreview();"></select>
                     </div>
                     <div class="form-group">
-                        <div class="form-label">Sub-Routine</div>
+                        <div class="form-label">子分类</div>
                         <select id="upSub" class="cyber-input" onchange="updatePreview()"></select>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-top:20px;">
-                    <div class="form-label">Description (Encyrpted Log)</div>
+                    <div class="form-label">描述（加密日志）</div>
                     <textarea id="upDesc" class="cyber-input" style="height: 80px; resize: none;"
-                        placeholder="ENTER BRIEF DESCRIPTION..." oninput="updatePreview()"></textarea>
+                        placeholder="请输入简介..." oninput="updatePreview()"></textarea>
                 </div>
 
                 <div class="form-group" style="margin-top:20px;">
-                    <div class="form-label">Tags (Comma Separated)</div>
-                    <input type="text" id="upTags" class="cyber-input" placeholder="cyber, secure, data..."
+                    <div class="form-label">标签（用逗号分隔）</div>
+                    <input type="text" id="upTags" class="cyber-input" placeholder="科幻, 安全, 数据..."
                         oninput="updatePreview()">
                 </div>
 
                 <div class="form-group" style="margin-top:20px;">
-                    <div class="form-label">Cover Image</div>
+                    <div class="form-label">封面图片</div>
                     <div class="cover-uploader" id="coverDrop" onclick="document.getElementById('coverInput').click()">
-                        <span>CLICK TO SET COVER</span>
+                        <span>点击设置封面</span>
                         <input type="file" id="coverInput" style="display:none" accept="image/*"
                             onchange="handleCoverSelect(this)">
                     </div>
@@ -236,8 +235,8 @@
                         onclick="document.getElementById('fileInput').click()">
                         <i class="ph ph-cloud-arrow-up"
                             style="color:var(--accent); font-size: 32px; text-shadow: 0 0 10px var(--accent);"></i>
-                        <span style="margin-top:10px; color:#fff;">CLICK TO UPLOAD ASSETS</span>
-                        <span style="font-size:10px; color:#666; margin-top:5px;">JPG, PNG, WEBP (Max 5MB)</span>
+                        <span style="margin-top:10px; color:#fff;">点击上传资源</span>
+                        <span style="font-size:10px; color:#666; margin-top:5px;">JPG, PNG, WEBP（最大 5MB）</span>
                         <input type="file" id="fileInput" style="display:none" multiple
                             onchange="handleFileSelect(this)">
                     </div>
@@ -246,33 +245,32 @@
 
             <!-- RIGHT: PREVIEW -->
             <div class="up-right-col">
-                <div class="preview-label">// LIVE_PREVIEW_RENDER_v9.0</div>
+                <div class="preview-label">// 实时预览 v9.0</div>
 
                 <!-- CARD MOCKUP -->
                 <div class="preview-card" id="previewCard">
-                    <div class="card-type-badge" id="preType">DATA</div>
+                    <div class="card-type-badge" id="preType">资源</div>
                     <div class="preview-cover">
                         <div class="card-scan"></div>
-                        <img id="preImg" src="https://placehold.co/600x400/000/00f3ff?text=NO+PREVIEW"
+                        <img id="preImg" src="https://placehold.co/600x400/000/00f3ff?text=暂无预览"
                             style="opacity: 0.8;">
                     </div>
                     <div class="preview-body">
-                        <div class="preview-title" id="preTitle">UNTITLED_ASSET</div>
+                        <div class="preview-title" id="preTitle">未命名资源</div>
                         <div class="preview-tags" id="preTags">
-                            <span class="tag-pill">CYBER</span>
-                            <span class="tag-pill">SECURE</span>
+                            <span class="tag-pill">新建</span>
                         </div>
                         <div class="preview-meta">
-                            <div class="pre-size">SIZE <span id="preSize" style="color:#fff;">0 MB</span></div>
-                            <div class="pre-ver">VER <span style="color:#fff;">v.1.0</span></div>
+                            <div class="pre-size">大小 <span id="preSize" style="color:#fff;">0 MB</span></div>
+                            <div class="pre-ver">版本 <span style="color:#fff;">v1.0</span></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- FILE LIST -->
-                <div class="preview-label" style="margin-top:20px;">// BATCH_QUEUE</div>
+                <div class="preview-label" style="margin-top:20px;">// 批量队列</div>
                 <div class="file-list" id="fileList">
-                    <div style="text-align:center; color:#444; padding:20px; font-size:10px;">NO FILES SELECTED</div>
+                    <div style="text-align:center; color:#444; padding:20px; font-size:10px;">未选择文件</div>
                 </div>
             </div>
         </div>
@@ -280,9 +278,9 @@
         <div class="up-footer">
             <div class="cyber-btn"
                 style="width:100px; font-size:11px; padding:10px; background:transparent; color:#888; border-color:#444;"
-                onclick="closeUploadPanel()">CANCEL_OP</div>
+                onclick="closeUploadPanel()">取消</div>
             <div class="cyber-btn" style="width:140px; font-size:11px; padding:10px;" onclick="submitUpload()">
-                <i class="ph ph-upload-simple"></i> INITIATE_UPLOAD
+                <i class="ph ph-upload-simple"></i> 开始上传
             </div>
         </div>
     </div>
@@ -291,18 +289,18 @@
     <div class="editor-panel" id="editorPanel">
         <div class="editor-header">
             <div style="font-size: 18px; font-weight: bold; letter-spacing: 2px; color: var(--accent);">
-                <span>//</span> NEURAL_AUTHORING_SYSTEM
+                <span>//</span> 神经写作系统
             </div>
             <div style="display:flex; gap: 20px; align-items:center;">
                 <div class="editor-stats" id="editorStats">
-                    <span class="stat-item">WORDS: <b id="statWords">0</b></span>
-                    <span class="stat-item">KV_IMG: <b id="statImg">0</b></span>
+                    <span class="stat-item">字数: <b id="statWords">0</b></span>
+                    <span class="stat-item">图片: <b id="statImg">0</b></span>
                 </div>
-                <div style="font-size: 10px; color: #666;">STATUS: <span style="color:var(--c-green)">ONLINE</span>
+                <div style="font-size: 10px; color: #666;">状态: <span style="color:var(--c-green)">在线</span>
                 </div>
                 <div class="cyber-btn" onclick="closeEditor()"
                     style="width:auto; padding: 5px 15px; font-size: 12px; background: transparent; border-color: var(--c-alert); color: var(--c-alert);">
-                    EXIT</div>
+                    退出</div>
             </div>
         </div>
 
@@ -310,13 +308,13 @@
             <!-- Font Size -->
             <div class="toolbar-dropdown">
                 <div class="dropdown-btn" onclick="event.stopPropagation(); toggleDropdown('fontSizeDropdown', event)">
-                    Size <i class="ph ph-caret-down"></i>
+                    字号 <i class="ph ph-caret-down"></i>
                 </div>
                 <div class="dropdown-content" id="fontSizeDropdown">
-                    <div class="dropdown-item" onclick="execCmd('fontSize', '1')">Small</div>
-                    <div class="dropdown-item" onclick="execCmd('fontSize', '3')">Normal</div>
-                    <div class="dropdown-item" onclick="execCmd('fontSize', '5')">Large</div>
-                    <div class="dropdown-item" onclick="execCmd('fontSize', '7')">Huge</div>
+                    <div class="dropdown-item" onclick="execCmd('fontSize', '1')">小</div>
+                    <div class="dropdown-item" onclick="execCmd('fontSize', '3')">中</div>
+                    <div class="dropdown-item" onclick="execCmd('fontSize', '5')">大</div>
+                    <div class="dropdown-item" onclick="execCmd('fontSize', '7')">特大</div>
                 </div>
             </div>
 
@@ -440,19 +438,19 @@
 
                 <!-- Table Panel -->
                 <div class="table-panel" id="tablePanel">
-                    <div style="font-size: 10px; color: var(--accent); margin-bottom: 10px;">TABLE SIZE</div>
+                    <div style="font-size: 10px; color: var(--accent); margin-bottom: 10px;">表格尺寸</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                         <div>
-                            <label style="font-size: 9px; color: #888;">ROWS</label>
+                            <label style="font-size: 9px; color: #888;">行数</label>
                             <input type="number" id="tableRows" value="3" min="1" max="20" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;">
                         </div>
                         <div>
-                            <label style="font-size: 9px; color: #888;">COLUMNS</label>
+                            <label style="font-size: 9px; color: #888;">列数</label>
                             <input type="number" id="tableCols" value="3" min="1" max="20" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;">
                         </div>
                     </div>
-                    <button class="tool-btn" onclick="insertTable()" style="width: 100%; margin-bottom: 5px;"><i class="ph ph-check"></i> INSERT</button>
-                    <button class="tool-btn" onclick="hideTablePanel()" style="width: 100%; background: rgba(255,0,85,0.2); border-color: #ff0055; color: #ff0055;"><i class="ph ph-x"></i> CANCEL</button>
+                    <button class="tool-btn" onclick="insertTable()" style="width: 100%; margin-bottom: 5px;"><i class="ph ph-check"></i> 插入</button>
+                    <button class="tool-btn" onclick="hideTablePanel()" style="width: 100%; background: rgba(255,0,85,0.2); border-color: #ff0055; color: #ff0055;"><i class="ph ph-x"></i> 取消</button>
                 </div>
 
                 <!-- Table Toolbar (shown when table is selected) -->
@@ -530,39 +528,38 @@
             <div class="editor-sidebar">
                 <div
                     style="color: var(--accent); font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
-                    // METADATA_CONFIG
+                    // 元数据配置
                 </div>
 
                 <div>
-                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">TITLE</label>
-                    <input type="text" id="artTitle" placeholder="Article Title...">
+                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">标题</label>
+                    <input type="text" id="artTitle" placeholder="文章标题...">
                 </div>
 
                 <div>
-                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">CATEGORY</label>
+                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">分类</label>
                     <select id="artCategory">
-                        <option value="blog-articles">BLOG / Articles</option>
-                        <option value="blog-notes">BLOG / Notes</option>
+                        <option value="blog-articles">博客 / 文章</option>
+                        <option value="blog-notes">博客 / 笔记</option>
                         <!-- Should be dynamically populated ideally, but hardcoded for now -->
                     </select>
                 </div>
 
                 <div>
-                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">TAGS</label>
-                    <input type="text" id="artTags" placeholder="cyber, neural, log...">
+                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">标签</label>
+                    <input type="text" id="artTags" placeholder="科幻, 神经, 日志...">
                 </div>
 
                 <div>
-                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">COVER IMAGE
-                        (OPTIONAL)</label>
+                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">封面（可选）</label>
                     <div class="cover-uploader" id="artCoverDrop" onclick="document.getElementById('artCoverInput').click()" style="margin-top: 5px;">
-                        <span id="artCoverText">CLICK TO UPLOAD COVER</span>
+                        <span id="artCoverText">点击上传封面</span>
                         <input type="file" id="artCoverInput" style="display:none" accept="image/*"
                             onchange="handleArticleCoverSelect(this)">
                     </div>
                     <div id="artCoverPreview" style="margin-top: 10px; display: none;">
                         <img id="artCoverPreviewImg" style="max-width: 100%; max-height: 150px; border: 1px solid var(--accent);">
-                        <button onclick="clearArticleCover()" style="margin-top: 5px; padding: 5px 10px; background: rgba(255,0,85,0.2); border: 1px solid #ff0055; color: #ff0055; cursor: pointer; font-size: 10px;">REMOVE</button>
+                        <button onclick="clearArticleCover()" style="margin-top: 5px; padding: 5px 10px; background: rgba(255,0,85,0.2); border: 1px solid #ff0055; color: #ff0055; cursor: pointer; font-size: 10px;">移除</button>
                     </div>
                 </div>
 

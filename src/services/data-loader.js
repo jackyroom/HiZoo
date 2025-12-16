@@ -1,93 +1,27 @@
-// 数据加载器：负责读取 taxonomy.json 并解析
+// 数据加载器：只从后端 /api/tree 读取分类与卡片
 
-const defaultStructure = [
-    {
-        group: 'MAIN DATABASE',
-        children: [
-            {
-                id: 'env', name: 'ENVIRONMENTS', color: '#00f3ff',
-                subs: [
-                    { id: 'neon', name: 'Neon City', tags: ['Night', 'Rain', 'Lights'] },
-                    { id: 'waste', name: 'Wasteland', tags: ['Dust', 'Ruins', 'Sun'] }
-                ]
-            },
-            {
-                id: 'evidence', name: 'EVIDENCE', color: '#ff0055',
-                subs: [
-                    { id: 'gallery', name: 'Scene Gallery', tags: ['Multi-View', 'Photos', 'Evidence'] },
-                    { id: 'video', name: 'Surveillance', tags: ['Footage', 'CCTV', 'Night Vision'] }
-                ]
-            }
-        ]
-    },
-    {
-        group: 'ARCHIVES',
-        children: [
-            {
-                id: 'docs', name: 'DOCUMENTS', color: '#ffcc00',
-                subs: [
-                    { id: 'manuals', name: 'Manuals', tags: ['PDF', 'Blueprint', 'Tech'] },
-                    { id: 'logs', name: 'Mission Logs', tags: ['Text', 'Report', 'Encrypted'] }
-                ]
-            }
-        ]
-    },
-    {
-        group: '3D ASSETS',
-        children: [
-            {
-                id: 'models', name: 'MODELS', color: '#ff9900',
-                subs: [
-                    { id: 'vehicles', name: 'Vehicles', tags: ['Cyber', 'Transport', 'Air'] },
-                    { id: 'chars', name: 'Characters', tags: ['Droid', 'Humanoid', 'NPC'] }
-                ]
-            }
-        ]
-    },
-    {
-        group: 'AUDIO LOGS',
-        children: [
-            {
-                id: 'audio', name: 'RECORDS', color: '#ff0055',
-                subs: [
-                    { id: 'logs', name: 'Voice Logs', tags: ['Voice', 'Encrypted'] },
-                    { id: 'music', name: 'Synthwave', tags: ['Music', 'Ambient'] }
-                ]
-            }
-        ]
-    },
-    {
-        group: 'NETWORK',
-        children: [
-            {
-                id: 'blog', name: 'BLOG', color: '#00ffaa',
-                subs: [
-                    { id: 'articles', name: 'Articles', tags: ['News', 'Tech', 'Cyber'] },
-                    { id: 'notes', name: 'Notes', tags: ['Draft', 'Memo'] }
-                ]
-            }
-        ]
-    }
-];
+import { buildTreeFromBackend } from './tree-builder.js';
 
 export async function loadTaxonomy() {
     try {
-        // file:// 场景下直接使用内置默认结构，避免 fetch 被浏览器拦截
-        if (location.protocol === 'file:') {
-            return defaultStructure;
+        const apiRes = await fetch('/api/tree', { cache: 'no-cache' });
+        if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData && apiData.success) {
+                const categories = apiData.categories || [];
+                const cards = apiData.cards || [];
+                const treeStructure = buildTreeFromBackend(categories, cards);
+                return {
+                    structure: treeStructure,
+                    backend: { categories, cards }
+                };
+            }
         }
-        const res = await fetch('src/config/taxonomy.json', { cache: 'no-cache' });
-        if (!res.ok) throw new Error(res.statusText);
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-            return data;
-        }
-        return defaultStructure;
+        // 后端没有返回成功时，前端不再提供任何默认分类
+        return { structure: [], backend: null };
     } catch (err) {
-        console.warn('[DataLoader] 加载 taxonomy.json 失败，回退默认结构', err);
-        return defaultStructure;
+        console.warn('[DataLoader] 调用 /api/tree 失败', err);
+        return { structure: [], backend: null };
     }
 }
-
-
 

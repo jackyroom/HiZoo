@@ -17,7 +17,7 @@ export function renderMediaContent(item, index) {
             const wrap = document.createElement('div');
             wrap.className = 'media-object active';
             wrap.style.cssText = 'width: 100%; height: 100%; overflow-y: auto; padding: 40px; background: rgba(0, 0, 0, 0.3);';
-            wrap.innerHTML = item.content || '<p>No content available</p>';
+            wrap.innerHTML = item.content || '<p>暂无内容</p>';
             container.appendChild(wrap);
         });
         return;
@@ -25,7 +25,7 @@ export function renderMediaContent(item, index) {
     
     // For other types, use sources array
     if (!item.sources || !item.sources[index]) {
-        container.innerHTML = '<div style="color: #ff0055; padding: 20px; text-align: center;">>> ERROR: SOURCE NOT FOUND</div>';
+        container.innerHTML = '<div style="color: #ff0055; padding: 20px; text-align: center;">>> 错误：未找到资源</div>';
         return;
     }
     
@@ -103,8 +103,8 @@ function renderTextFile(container, item) {
     wrap.className = 'text-reader-container active media-object';
     const toc = document.createElement('div');
     toc.className = 'text-toc';
-    toc.innerHTML = `<div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">// DIRECTORY</div>`;
-    ['0x00_HEADER', '0x01_INIT_SEQ', '0x02_BODY_LOG', '0x03_ERR_DUMP', '0x04_EOF'].forEach(chap => {
+    toc.innerHTML = `<div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">// 目录</div>`;
+    ['0x00_封面', '0x01_初始化', '0x02_正文日志', '0x03_错误转储', '0x04_结束'].forEach(chap => {
         const row = document.createElement('div');
         row.className = 'toc-item';
         row.innerText = chap;
@@ -112,7 +112,7 @@ function renderTextFile(container, item) {
     });
     const content = document.createElement('div');
     content.className = 'text-content';
-    content.innerHTML = `<h1>${item.title}</h1><p>DATE: 2077-11-02 <br>ENCRYPTION: AES-256-GCM</p><p>System diagnostics initialized...</p><p>${generateRandomLog()}</p>`;
+    content.innerHTML = `<h1>${item.title}</h1><p>日期: 2077-11-02 <br>加密: AES-256-GCM</p><p>系统诊断已启动...</p><p>${generateRandomLog()}</p>`;
     wrap.appendChild(toc);
     wrap.appendChild(content);
     container.appendChild(wrap);
@@ -127,9 +127,9 @@ function renderDocument(container, item) {
     const fileExt = fileName.split('.').pop().toUpperCase();
     wrap.innerHTML = `
         <div style="font-size: 48px; margin-bottom: 20px;">📄</div>
-        <div style="font-size: 18px; color: var(--accent); margin-bottom: 10px;">DOCUMENT FILE</div>
+        <div style="font-size: 18px; color: var(--accent); margin-bottom: 10px;">文档文件</div>
         <div style="font-size: 12px; color: #888; margin-bottom: 10px;">${fileName}</div>
-        <div style="font-size: 11px; color: #666; margin-bottom: 30px;">Format: ${fileExt}</div>
+        <div style="font-size: 11px; color: #666; margin-bottom: 30px;">格式: ${fileExt}</div>
         <a href="${src}" download="${fileName}" style="
             display: inline-block;
             padding: 12px 24px;
@@ -140,7 +140,7 @@ function renderDocument(container, item) {
             font-weight: bold;
             font-size: 11px;
             letter-spacing: 1px;
-        ">DOWNLOAD DOCUMENT</a>
+        ">下载文档</a>
     `;
     container.appendChild(wrap);
 }

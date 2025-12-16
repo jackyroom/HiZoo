@@ -10,7 +10,7 @@ export function renderFileList() {
     const files = getUploadedFiles();
     
     if (files.length === 0) {
-        list.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">NO FILES SELECTED</div>';
+        list.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">未选择文件</div>';
         return;
     }
 
@@ -43,7 +43,7 @@ export function updatePreview(structure) {
     const files = getUploadedFiles();
     const cover = getUploadedCover();
     
-    const title = document.getElementById('upTitle')?.value || (files.length > 0 ? files[0].name : 'UNTITLED_ASSET');
+    const title = document.getElementById('upTitle')?.value || (files.length > 0 ? files[0].name : '未命名资源');
     const catVal = document.getElementById('upCategory')?.value;
     const desc = document.getElementById('upDesc')?.value || '';
     const tags = (document.getElementById('upTags')?.value || '').split(',').filter(t => t.trim());
@@ -58,7 +58,7 @@ export function updatePreview(structure) {
         if (structure[val[0]]?.children?.[val[1]]) {
             const category = structure[val[0]].children[val[1]];
             const preType = document.getElementById('preType');
-            if (preType) preType.innerText = category.name.toUpperCase();
+            if (preType) preType.innerText = category.name;
         }
     }
     
@@ -73,14 +73,14 @@ export function updatePreview(structure) {
         tagContainer.innerHTML = '';
         const defTag = document.createElement('span');
         defTag.className = 'tag-pill';
-        defTag.innerText = 'NEW';
+        defTag.innerText = '新建';
         tagContainer.appendChild(defTag);
         
         tags.forEach(t => {
             if (t.trim()) {
                 const span = document.createElement('span');
                 span.className = 'tag-pill';
-                span.innerText = t.trim().toUpperCase();
+                span.innerText = t.trim();
                 tagContainer.appendChild(span);
             }
         });
@@ -92,7 +92,7 @@ export function updatePreview(structure) {
         if (cover) {
             preImg.src = cover;
         } else if (files.length === 0) {
-            preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=NO+PREVIEW';
+            preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=%E6%9A%82%E6%97%A0%E9%A2%84%E8%A7%88';
         }
     }
 }

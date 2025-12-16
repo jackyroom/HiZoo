@@ -34,13 +34,13 @@ export function openUploadPanel() {
     if (upTitle) upTitle.value = '';
     if (upDesc) upDesc.value = '';
     if (upTags) upTags.value = '';
-    if (fileList) fileList.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">NO FILES SELECTED</div>';
-    if (preImg) preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=NO+PREVIEW';
+    if (fileList) fileList.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">未选择文件</div>';
+    if (preImg) preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=%E6%9A%82%E6%97%A0%E9%A2%84%E8%A7%88';
     
     if (coverDrop) {
         coverDrop.style.backgroundImage = 'none';
         const coverInput = coverDrop.querySelector('#coverInput') || document.getElementById('coverInput');
-        coverDrop.innerHTML = '<span id="coverText">CLICK TO SET COVER</span>';
+        coverDrop.innerHTML = '<span id="coverText">点击设置封面</span>';
         if (coverInput) {
             coverDrop.appendChild(coverInput);
         } else {
@@ -126,9 +126,9 @@ export function bindUploadPanel(structure) {
     const upHeader = document.querySelector('#uploadPanel .up-header');
     const closeBtn = upHeader ? upHeader.querySelector('span[onclick*="closeUploadPanel"]') : null;
     const cancelBtn = Array.from(document.querySelectorAll('.cyber-btn'))
-        .find(btn => btn.textContent && btn.textContent.includes('CANCEL_OP'));
+        .find(btn => btn.textContent && btn.textContent.includes('取消'));
     const submitBtn = Array.from(document.querySelectorAll('.cyber-btn'))
-        .find(btn => btn.textContent && btn.textContent.includes('UPLOAD'));
+        .find(btn => btn.textContent && btn.textContent.includes('上传'));
     const coverDrop = document.getElementById('coverDrop');
     const coverInput = document.getElementById('coverInput');
     const coverRemove = document.querySelector('#coverPreview button');
@@ -168,7 +168,7 @@ export function bindUploadPanel(structure) {
                             }
                         }, 100);
                         
-                        alert(`>> UPLOAD COMPLETE: ${getUploadedFiles().length} FILE(S) -> 1 ASSET CREATED`);
+                        alert(`>> 上传完成：${getUploadedFiles().length} 个文件 -> 已创建 1 条资源`);
                     }
                 });
             }
@@ -236,7 +236,7 @@ function clearCover() {
         if (coverText) {
             const textEl = document.createElement('span');
             textEl.id = 'coverText';
-            textEl.innerText = 'CLICK TO UPLOAD COVER';
+            textEl.innerText = '点击上传封面';
             coverDrop.appendChild(textEl);
         }
         if (coverInput) {

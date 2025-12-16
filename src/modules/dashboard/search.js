@@ -1,6 +1,5 @@
 // 搜索模块：处理搜索建议和执行搜索
 
-import { generateData } from '../../services/mock-factory.js';
 import { assetsStore } from '../../store/assets.store.js';
 
 let structure = [];
@@ -62,7 +61,10 @@ function getAllAssets() {
     structure.forEach(group => {
         group.children.forEach(category => {
             category.subs.forEach(sub => {
-                const assets = generateData(category, sub, uploadedDataStore);
+                const storeKey = `${category.id}-${sub.id}`;
+                const uploaded = uploadedDataStore[storeKey] || [];
+                const backendCards = Array.isArray(sub.cards) ? sub.cards : [];
+                const assets = [...uploaded, ...backendCards];
                 assets.forEach(asset => {
                     allAssets.push({
                         ...asset,
@@ -151,7 +153,7 @@ function displaySearchSuggestions(suggestions, query) {
         searchSuggestions.innerHTML = `
             <div class="suggestion-section">
                 <div class="suggestion-item" style="cursor: default; opacity: 0.5;">
-                    <div class="suggestion-item-text">No results found for "${query}"</div>
+                    <div class="suggestion-item-text">没有找到与 “${query}” 相关的结果</div>
                 </div>
             </div>
         `;
@@ -177,7 +179,7 @@ function displaySearchSuggestions(suggestions, query) {
     if (grouped.category.length > 0) {
         const section = document.createElement('div');
         section.className = 'suggestion-section';
-        section.innerHTML = '<div class="suggestion-section-title">CATEGORIES</div>';
+        section.innerHTML = '<div class="suggestion-section-title">分类</div>';
 
         grouped.category.slice(0, 3).forEach(item => {
             const elem = createSuggestionItem('[CAT]', item.title, item.group, () => {
@@ -201,7 +203,7 @@ function displaySearchSuggestions(suggestions, query) {
     if (grouped.subcategory.length > 0) {
         const section = document.createElement('div');
         section.className = 'suggestion-section';
-        section.innerHTML = '<div class="suggestion-section-title">SUBCATEGORIES</div>';
+        section.innerHTML = '<div class="suggestion-section-title">子分类</div>';
 
         grouped.subcategory.slice(0, 3).forEach(item => {
             const elem = createSuggestionItem('[SUB]', item.title, `${item.category.name} / ${item.sub.name}`, () => {
@@ -225,7 +227,7 @@ function displaySearchSuggestions(suggestions, query) {
     if (grouped.tag.length > 0) {
         const section = document.createElement('div');
         section.className = 'suggestion-section';
-        section.innerHTML = '<div class="suggestion-section-title">TAGS</div>';
+        section.innerHTML = '<div class="suggestion-section-title">标签</div>';
 
         const uniqueTags = [...new Set(grouped.tag.map(t => t.title))];
         uniqueTags.slice(0, 5).forEach(tagName => {
@@ -239,7 +241,10 @@ function displaySearchSuggestions(suggestions, query) {
                     });
                     setTimeout(() => {
                         const currentAssets = assetsStore.getAssets();
-                        const filtered = currentAssets.filter(a => a.tag === tagName.toUpperCase());
+                        const filtered = currentAssets.filter(a => {
+                            const aTags = Array.isArray(a.tags) ? a.tags : (a.tag ? [a.tag] : []);
+                            return aTags.map(t => t.toLowerCase()).includes(tagName.toLowerCase());
+                        });
                         if (window.eventBus) {
                             window.eventBus.emit('FILTER_CHANGE', { tag: tagName, assets: filtered });
                         }
@@ -258,7 +263,7 @@ function displaySearchSuggestions(suggestions, query) {
     if (grouped.asset.length > 0) {
         const section = document.createElement('div');
         section.className = 'suggestion-section';
-        section.innerHTML = '<div class="suggestion-section-title">ASSETS</div>';
+        section.innerHTML = '<div class="suggestion-section-title">资源</div>';
 
         grouped.asset.slice(0, 5).forEach(item => {
             const typeIcon = item.asset.type === 'image' ? '[IMG]' :
@@ -308,8 +313,9 @@ function createSuggestionItem(icon, title, meta, onClick) {
 export function executeSearch(query) {
     const allAssets = getAllAssets();
     const filtered = allAssets.filter(asset => {
+        const aTags = Array.isArray(asset.tags) ? asset.tags : (asset.tag ? [asset.tag] : []);
         return asset.title.toLowerCase().includes(query) ||
-            asset.tag.toLowerCase().includes(query) ||
+            aTags.some(t => t.toLowerCase().includes(query)) ||
             (asset.description && asset.description.toLowerCase().includes(query)) ||
             asset.type.toLowerCase().includes(query);
     });
@@ -319,13 +325,13 @@ export function executeSearch(query) {
     } else {
         const grid = document.getElementById('grid');
         if (grid) {
-            grid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #666;">
-                    <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">🔍</div>
-                    <div style="font-size: 14px; color: var(--accent); margin-bottom: 10px;">NO RESULTS FOUND</div>
-                    <div style="font-size: 11px;">Try searching for categories, tags, or asset names</div>
-                </div>
-            `;
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">🔍</div>
+                <div style="font-size: 14px; color: var(--accent); margin-bottom: 10px;">未找到结果</div>
+                <div style="font-size: 11px;">请尝试搜索分类、标签或资源名称</div>
+            </div>
+        `;
         }
     }
 }
@@ -338,7 +344,7 @@ function renderSearchResults(results) {
 
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) {
-        pageTitle.innerHTML = `SEARCH RESULTS<span class="page-subtitle">/ ${results.length} ITEMS</span>`;
+        pageTitle.innerHTML = `搜索结果<span class="page-subtitle">/ ${results.length} 项</span>`;
     }
 
     // Group results by category

@@ -2,6 +2,5 @@
 
 export { assetsStore } from './assets.store.js';
 export { uiStore } from './ui.store.js';
-
-
+export { taxonomyStore } from './taxonomy.store.js';
 
