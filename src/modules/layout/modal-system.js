@@ -29,7 +29,7 @@ export function openModal(item) {
     if (btnPrev) btnPrev.style.display = 'none';
     if (btnNext) btnNext.style.display = 'none';
     if (thumbStrip) thumbStrip.classList.remove('active');
-    
+
     container.innerHTML = '';
 
     // Show/Hide Thumbnail Navigation
@@ -84,9 +84,9 @@ export function openModal(item) {
     // Render media content
     uiStore.setActiveItem(item, 0);
     renderMediaContent(item, 0);
-    
+
     // Render thumbnails if needed
-    if (item.sources && item.sources.length > 1 && 
+    if (item.sources && item.sources.length > 1 &&
         (item.type === 'gallery' || (item.type !== 'pdf' && item.type !== 'txt' && item.type !== 'model' && item.type !== 'audio' && item.type !== 'article'))) {
         renderThumbnails(item, 0, (index) => {
             uiStore.currentMediaIndex = index;
@@ -99,13 +99,101 @@ export function openModal(item) {
         window.eventBus.emit('MODAL_OPEN', { item, index: 0 });
     }
 
+    // Setup Download Panel
+    const btnStartDownload = document.getElementById('btnStartDownload');
+    if (btnStartDownload) {
+        // Use onclick to prevent duplicate listeners
+        btnStartDownload.onclick = (e) => {
+            e.stopPropagation();
+            openDownloadPanel(item);
+        };
+    }
+
     modal.classList.add('active');
+}
+
+function openDownloadPanel(item) {
+    const panels = document.getElementById('downloadPanel');
+    const content = document.getElementById('dlContent');
+    const closeBtn = document.getElementById('closeDownloadPanel');
+
+    if (!panels || !content) return;
+
+    // Helper to extract url/label
+    const getDl = (d) => {
+        if (typeof d === 'string') return { url: d, name: '下载数据包' };
+        if (typeof d === 'object' && d) {
+            return {
+                url: d.url || d.link || d.href || '#',
+                name: d.name || d.title || d.label || 'DOWNLOAD_PACKET',
+                ver: d.ver || d.version
+            };
+        }
+        return { url: '#', name: '无效链接' };
+    };
+
+    // Generate Content from downloads array
+    let html = '';
+    const downloads = item.downloads || [];
+
+    if (downloads.length === 0) {
+        html += `<div class="dl-empty-state">// 未检测到数据</div>`;
+    } else {
+        // Latest Version (First Item)
+        const latest = getDl(downloads[0]);
+        html += `<div class="dl-section-title">// 最新版本</div>`;
+        html += `
+            <a href="${latest.url}" class="dl-btn latest" target="_blank">
+                <div class="dl-info">
+                    <div class="dl-name">${item.title}</div>
+                    <div class="dl-ver">
+                        ${latest.ver || item.ver || 'v.1.0'} 
+                        <span class="dl-tag secure">安全</span>
+                        <span class="dl-tag verified">已验证</span>
+                    </div>
+                </div>
+                <div class="dl-action">
+                    <span>${latest.name}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+                </div>
+            </a>
+        `;
+
+        // Previous versions
+        if (downloads.length > 1) {
+            html += `<div class="dl-section-title" style="margin-top:30px;">// 历史版本</div>`;
+            html += `<div class="dl-grid">`;
+            for (let i = 1; i < downloads.length; i++) {
+                const nav = getDl(downloads[i]);
+                html += `
+                    <a href="${nav.url}" class="dl-btn archive" target="_blank">
+                        <div class="dl-info-mini">
+                            <span class="dl-name-mini">${item.title}</span>
+                            <span class="dl-ver-mini">v.${downloads.length - i}.0</span>
+                        </div>
+                        <div class="dl-action-mini">获取</div>
+                    </a>
+                `;
+            }
+            html += `</div>`;
+        }
+    }
+
+    content.innerHTML = html;
+    panels.classList.add('active');
+
+    if (closeBtn) {
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            panels.classList.remove('active');
+        };
+    }
 }
 
 export function closeModal() {
     const modal = document.getElementById('modal');
     if (modal) modal.classList.remove('active');
-    
+
     // Cleanup
     const container = document.getElementById('mediaContainer');
     if (container) {
@@ -113,14 +201,19 @@ export function closeModal() {
         cleanupAudio(container);
         container.innerHTML = '';
     }
-    
+
+    // Cleanup Download Panel
+    const downloadPanel = document.getElementById('downloadPanel');
+    if (downloadPanel) downloadPanel.classList.remove('active');
+
+
     const modalPanel = document.getElementById('modalPanel');
     if (modalPanel) modalPanel.classList.remove('expanded');
     const expandBtn = document.querySelector('.expand-btn');
     if (expandBtn) expandBtn.innerText = "全屏";
-    
+
     uiStore.setActiveItem(null, 0);
-    
+
     if (window.eventBus) {
         window.eventBus.emit('MODAL_CLOSE');
     }
@@ -129,14 +222,14 @@ export function closeModal() {
 export function toggleFullscreen() {
     const modalPanel = document.getElementById('modalPanel');
     const btn = document.querySelector('.expand-btn');
-    
+
     if (!modalPanel) {
         console.error('[toggleFullscreen] modalPanel not found');
         return;
     }
 
     modalPanel.classList.toggle('expanded');
-    
+
     if (btn) {
         const isExpanded = modalPanel.classList.contains('expanded');
         btn.innerText = isExpanded ? "退出全屏" : "全屏";
@@ -147,7 +240,7 @@ export function initModalKeyboard() {
     document.addEventListener('keydown', (e) => {
         const modal = document.getElementById('modal');
         if (!modal || !modal.classList.contains('active')) return;
-        
+
         if (e.key === 'Escape') {
             closeModal();
         } else if (e.key === 'ArrowLeft') {

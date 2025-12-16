@@ -12,7 +12,8 @@
     <!-- Model Viewer for 3D Models -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     <!-- Highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="src/styles/main.css">
 </head>
@@ -175,7 +176,18 @@
                     <p>Asset verified. Security checksum valid. Contains high-resolution visual data and telemetry logs
                         from the targeted sector.</p>
                 </div>
-                <div class="cyber-btn">开始下载</div>
+                <div class="cyber-btn" id="btnStartDownload">开始下载</div>
+
+                <!-- DOWNLOAD PANEL (Overlay inside modal) -->
+                <div class="download-panel" id="downloadPanel">
+                    <div class="dl-header">
+                        <span>// 选择版本</span>
+                        <span class="dl-close" id="closeDownloadPanel">×</span>
+                    </div>
+                    <div class="dl-content" id="dlContent">
+                        <!-- Dynamic Content will be injected here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -211,8 +223,8 @@
 
                 <div class="form-group" style="margin-top:20px;">
                     <div class="form-label">描述（加密日志）</div>
-                    <textarea id="upDesc" class="cyber-input" style="height: 80px; resize: none;"
-                        placeholder="请输入简介..." oninput="updatePreview()"></textarea>
+                    <textarea id="upDesc" class="cyber-input" style="height: 80px; resize: none;" placeholder="请输入简介..."
+                        oninput="updatePreview()"></textarea>
                 </div>
 
                 <div class="form-group" style="margin-top:20px;">
@@ -252,8 +264,7 @@
                     <div class="card-type-badge" id="preType">资源</div>
                     <div class="preview-cover">
                         <div class="card-scan"></div>
-                        <img id="preImg" src="https://placehold.co/600x400/000/00f3ff?text=暂无预览"
-                            style="opacity: 0.8;">
+                        <img id="preImg" src="https://placehold.co/600x400/000/00f3ff?text=暂无预览" style="opacity: 0.8;">
                     </div>
                     <div class="preview-body">
                         <div class="preview-title" id="preTitle">未命名资源</div>
@@ -372,11 +383,13 @@
             <button class="tool-btn" onclick="execCmd('formatBlock', 'blockquote')" title="Quote"><i
                     class="ph ph-quotes"></i></button>
             <button class="tool-btn" onclick="insertCodeBlock()" title="Code Block"><i class="ph ph-code"></i></button>
-            <button class="tool-btn" onclick="insertHorizontalRule()" title="Horizontal Line"><i class="ph ph-minus"></i></button>
+            <button class="tool-btn" onclick="insertHorizontalRule()" title="Horizontal Line"><i
+                    class="ph ph-minus"></i></button>
 
             <div class="tool-separator"></div>
 
-            <button class="tool-btn" onclick="showTablePanel()" title="Insert Table"><i class="ph ph-table"></i></button>
+            <button class="tool-btn" onclick="showTablePanel()" title="Insert Table"><i
+                    class="ph ph-table"></i></button>
             <button class="tool-btn" onclick="showLinkPanel()" title="Link"><i class="ph ph-link"></i></button>
             <button class="tool-btn" onclick="triggerFileUpload('image')" title="Insert Image"><i
                     class="ph ph-image"></i></button>
@@ -442,64 +455,89 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                         <div>
                             <label style="font-size: 9px; color: #888;">行数</label>
-                            <input type="number" id="tableRows" value="3" min="1" max="20" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;">
+                            <input type="number" id="tableRows" value="3" min="1" max="20"
+                                style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;">
                         </div>
                         <div>
                             <label style="font-size: 9px; color: #888;">列数</label>
-                            <input type="number" id="tableCols" value="3" min="1" max="20" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;">
+                            <input type="number" id="tableCols" value="3" min="1" max="20"
+                                style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;">
                         </div>
                     </div>
-                    <button class="tool-btn" onclick="insertTable()" style="width: 100%; margin-bottom: 5px;"><i class="ph ph-check"></i> 插入</button>
-                    <button class="tool-btn" onclick="hideTablePanel()" style="width: 100%; background: rgba(255,0,85,0.2); border-color: #ff0055; color: #ff0055;"><i class="ph ph-x"></i> 取消</button>
+                    <button class="tool-btn" onclick="insertTable()" style="width: 100%; margin-bottom: 5px;"><i
+                            class="ph ph-check"></i> 插入</button>
+                    <button class="tool-btn" onclick="hideTablePanel()"
+                        style="width: 100%; background: rgba(255,0,85,0.2); border-color: #ff0055; color: #ff0055;"><i
+                            class="ph ph-x"></i> 取消</button>
                 </div>
 
                 <!-- Table Toolbar (shown when table is selected) -->
                 <div class="table-toolbar" id="tableToolbar">
-                    <button class="tool-btn" onclick="tableAddRow('above')" title="Add Row Above"><i class="ph ph-arrow-up"></i></button>
-                    <button class="tool-btn" onclick="tableAddRow('below')" title="Add Row Below"><i class="ph ph-arrow-down"></i></button>
-                    <button class="tool-btn" onclick="tableAddCol('left')" title="Add Column Left"><i class="ph ph-arrow-left"></i></button>
-                    <button class="tool-btn" onclick="tableAddCol('right')" title="Add Column Right"><i class="ph ph-arrow-right"></i></button>
+                    <button class="tool-btn" onclick="tableAddRow('above')" title="Add Row Above"><i
+                            class="ph ph-arrow-up"></i></button>
+                    <button class="tool-btn" onclick="tableAddRow('below')" title="Add Row Below"><i
+                            class="ph ph-arrow-down"></i></button>
+                    <button class="tool-btn" onclick="tableAddCol('left')" title="Add Column Left"><i
+                            class="ph ph-arrow-left"></i></button>
+                    <button class="tool-btn" onclick="tableAddCol('right')" title="Add Column Right"><i
+                            class="ph ph-arrow-right"></i></button>
                     <div class="tool-separator"></div>
-                    <button class="tool-btn" onclick="tableDeleteRow()" title="Delete Row"><i class="ph ph-minus"></i></button>
-                    <button class="tool-btn" onclick="tableDeleteCol()" title="Delete Column" style="font-weight: bold;">|</button>
-                    <button class="tool-btn" onclick="tableDeleteTable()" title="Delete Table" style="color: var(--c-alert);"><i class="ph ph-trash"></i></button>
+                    <button class="tool-btn" onclick="tableDeleteRow()" title="Delete Row"><i
+                            class="ph ph-minus"></i></button>
+                    <button class="tool-btn" onclick="tableDeleteCol()" title="Delete Column"
+                        style="font-weight: bold;">|</button>
+                    <button class="tool-btn" onclick="tableDeleteTable()" title="Delete Table"
+                        style="color: var(--c-alert);"><i class="ph ph-trash"></i></button>
                 </div>
 
                 <!-- Table Context Menu (right-click menu) -->
                 <div class="table-context-menu" id="tableContextMenu">
                     <div class="context-menu-section">
                         <div class="context-menu-title">ROW HEIGHT</div>
-                        <input type="number" id="tableRowHeight" value="30" min="20" max="200" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; margin-bottom: 10px;">
-                        <button class="tool-btn" onclick="applyTableRowHeight()" style="width: 100%; margin-bottom: 15px;">APPLY</button>
+                        <input type="number" id="tableRowHeight" value="30" min="20" max="200"
+                            style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; margin-bottom: 10px;">
+                        <button class="tool-btn" onclick="applyTableRowHeight()"
+                            style="width: 100%; margin-bottom: 15px;">APPLY</button>
                     </div>
-                    
+
                     <div class="context-menu-section">
                         <div class="context-menu-title">COLUMN WIDTH</div>
-                        <input type="number" id="tableColWidth" value="100" min="50" max="500" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; margin-bottom: 10px;">
-                        <button class="tool-btn" onclick="applyTableColWidth()" style="width: 100%; margin-bottom: 15px;">APPLY</button>
+                        <input type="number" id="tableColWidth" value="100" min="50" max="500"
+                            style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; margin-bottom: 10px;">
+                        <button class="tool-btn" onclick="applyTableColWidth()"
+                            style="width: 100%; margin-bottom: 15px;">APPLY</button>
                     </div>
 
                     <div class="context-menu-section">
                         <div class="context-menu-title">TEXT ALIGN</div>
                         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-                            <button class="tool-btn" onclick="setTableCellAlign('left', 'cell')" title="Cell Left"><i class="ph ph-text-align-left"></i></button>
-                            <button class="tool-btn" onclick="setTableCellAlign('center', 'cell')" title="Cell Center"><i class="ph ph-text-align-center"></i></button>
-                            <button class="tool-btn" onclick="setTableCellAlign('right', 'cell')" title="Cell Right"><i class="ph ph-text-align-right"></i></button>
+                            <button class="tool-btn" onclick="setTableCellAlign('left', 'cell')" title="Cell Left"><i
+                                    class="ph ph-text-align-left"></i></button>
+                            <button class="tool-btn" onclick="setTableCellAlign('center', 'cell')"
+                                title="Cell Center"><i class="ph ph-text-align-center"></i></button>
+                            <button class="tool-btn" onclick="setTableCellAlign('right', 'cell')" title="Cell Right"><i
+                                    class="ph ph-text-align-right"></i></button>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button class="tool-btn" onclick="setTableCellAlign('left', 'row')" title="Row Left" style="font-size: 9px;">ROW</button>
-                            <button class="tool-btn" onclick="setTableCellAlign('center', 'row')" title="Row Center" style="font-size: 9px;">ROW</button>
-                            <button class="tool-btn" onclick="setTableCellAlign('right', 'row')" title="Row Right" style="font-size: 9px;">ROW</button>
+                            <button class="tool-btn" onclick="setTableCellAlign('left', 'row')" title="Row Left"
+                                style="font-size: 9px;">ROW</button>
+                            <button class="tool-btn" onclick="setTableCellAlign('center', 'row')" title="Row Center"
+                                style="font-size: 9px;">ROW</button>
+                            <button class="tool-btn" onclick="setTableCellAlign('right', 'row')" title="Row Right"
+                                style="font-size: 9px;">ROW</button>
                         </div>
                     </div>
 
                     <div class="context-menu-section">
                         <div class="context-menu-title">CELL BACKGROUND</div>
-                        <div class="color-picker-grid" id="tableColorPicker" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-bottom: 10px;">
+                        <div class="color-picker-grid" id="tableColorPicker"
+                            style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-bottom: 10px;">
                             <!-- Colors will be generated by JS -->
                         </div>
-                        <input type="color" id="tableCustomColor" value="#000000" style="width: 100%; height: 30px; margin-bottom: 10px; cursor: pointer;">
-                        <button class="tool-btn" onclick="applyTableCellColor()" style="width: 100%;">APPLY COLOR</button>
+                        <input type="color" id="tableCustomColor" value="#000000"
+                            style="width: 100%; height: 30px; margin-bottom: 10px; cursor: pointer;">
+                        <button class="tool-btn" onclick="applyTableCellColor()" style="width: 100%;">APPLY
+                            COLOR</button>
                     </div>
                 </div>
 
@@ -552,14 +590,17 @@
 
                 <div>
                     <label style="font-size: 10px; color: #888; display: block; margin-bottom: 5px;">封面（可选）</label>
-                    <div class="cover-uploader" id="artCoverDrop" onclick="document.getElementById('artCoverInput').click()" style="margin-top: 5px;">
+                    <div class="cover-uploader" id="artCoverDrop"
+                        onclick="document.getElementById('artCoverInput').click()" style="margin-top: 5px;">
                         <span id="artCoverText">点击上传封面</span>
                         <input type="file" id="artCoverInput" style="display:none" accept="image/*"
                             onchange="handleArticleCoverSelect(this)">
                     </div>
                     <div id="artCoverPreview" style="margin-top: 10px; display: none;">
-                        <img id="artCoverPreviewImg" style="max-width: 100%; max-height: 150px; border: 1px solid var(--accent);">
-                        <button onclick="clearArticleCover()" style="margin-top: 5px; padding: 5px 10px; background: rgba(255,0,85,0.2); border: 1px solid #ff0055; color: #ff0055; cursor: pointer; font-size: 10px;">移除</button>
+                        <img id="artCoverPreviewImg"
+                            style="max-width: 100%; max-height: 150px; border: 1px solid var(--accent);">
+                        <button onclick="clearArticleCover()"
+                            style="margin-top: 5px; padding: 5px 10px; background: rgba(255,0,85,0.2); border: 1px solid #ff0055; color: #ff0055; cursor: pointer; font-size: 10px;">移除</button>
                     </div>
                 </div>
 
