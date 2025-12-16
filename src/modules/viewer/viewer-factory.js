@@ -10,57 +10,62 @@ export function renderMediaContent(item, index) {
     const container = document.getElementById('mediaContainer');
     if (!container) return;
     
+    startLoadingIndicator();
+
     // Handle article type (has content instead of sources)
     if (item.type === 'article') {
-        simulateLoading(() => {
-            container.innerHTML = '';
-            const wrap = document.createElement('div');
-            wrap.className = 'media-object active';
-            wrap.style.cssText = 'width: 100%; height: 100%; overflow-y: auto; padding: 40px; background: rgba(0, 0, 0, 0.3);';
-            wrap.innerHTML = item.content || '<p>暂无内容</p>';
-            container.appendChild(wrap);
-        });
+        container.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.className = 'media-object active';
+        wrap.style.cssText = 'width: 100%; height: 100%; overflow-y: auto; padding: 40px; background: rgba(0, 0, 0, 0.3);';
+        wrap.innerHTML = item.content || '<p>暂无内容</p>';
+        container.appendChild(wrap);
+        finishLoadingIndicator();
         return;
     }
     
     // For other types, use sources array
     if (!item.sources || !item.sources[index]) {
         container.innerHTML = '<div style="color: #ff0055; padding: 20px; text-align: center;">>> 错误：未找到资源</div>';
+        finishLoadingIndicator();
         return;
     }
     
     const src = item.sources[index];
-    simulateLoading(() => {
-        container.innerHTML = '';
-        const renderItem = { ...item, sources: [src] };
-        
-        switch (item.type) {
-            case 'image':
-            case 'gallery':
-                renderImage(container, renderItem);
-                break;
-            case 'video':
-                renderVideo(container, renderItem);
-                break;
-            case 'audio':
-                renderAudio(container, renderItem);
-                break;
-            case 'model':
-                render3DModel(container, renderItem);
-                break;
-            case 'pdf':
-                renderPDF(container, renderItem);
-                break;
-            case 'txt':
-                renderTextFile(container, renderItem);
-                break;
-            case 'doc':
-                renderDocument(container, renderItem);
-                break;
-            default:
-                renderImage(container, renderItem);
-        }
-    });
+    container.innerHTML = '';
+    const renderItem = { ...item, sources: [src] };
+    const finish = () => finishLoadingIndicator();
+    
+    switch (item.type) {
+        case 'image':
+        case 'gallery':
+            renderImage(container, renderItem, finish);
+            break;
+        case 'video':
+            renderVideo(container, renderItem, finish);
+            break;
+        case 'audio':
+            renderAudio(container, renderItem);
+            finish();
+            break;
+        case 'model':
+            render3DModel(container, renderItem, finish);
+            break;
+        case 'pdf':
+            renderPDF(container, renderItem);
+            finish();
+            break;
+        case 'txt':
+            renderTextFile(container, renderItem);
+            finish();
+            break;
+        case 'doc':
+            renderDocument(container, renderItem);
+            finish();
+            break;
+        default:
+            renderImage(container, renderItem, finish);
+    }
     
     // Update thumbnail navigation if needed
     if (item.sources && item.sources.length > 1 && 
@@ -69,28 +74,42 @@ export function renderMediaContent(item, index) {
     }
 }
 
-function simulateLoading(callback) {
+let loaderTimer = null;
+let loaderVisible = false;
+
+function startLoadingIndicator() {
     const loader = document.getElementById('mediaLoader');
     const bar = document.getElementById('loadBar');
     const pct = document.getElementById('loadPercent');
-    if (loader) loader.classList.add('active');
+    // 先重置，不立刻显示，避免闪烁
     if (bar) bar.style.width = '0%';
     if (pct) pct.innerText = '0%';
-    
-    let progress = 0;
-    const loadTimer = setInterval(() => {
-        progress += Math.random() * 8;
-        if (progress > 100) progress = 100;
-        if (bar) bar.style.width = progress + '%';
-        if (pct) pct.innerText = Math.floor(progress) + '%';
-        if (progress === 100) {
-            clearInterval(loadTimer);
-            setTimeout(() => {
-                if (loader) loader.classList.remove('active');
-                if (callback) callback();
-            }, 300);
-        }
-    }, 50);
+    loaderVisible = false;
+    if (loaderTimer) clearTimeout(loaderTimer);
+    loaderTimer = setTimeout(() => {
+        loaderVisible = true;
+        if (loader) loader.classList.add('active');
+    }, 120); // 延时显示，若加载很快则不展示
+}
+
+function finishLoadingIndicator() {
+    const loader = document.getElementById('mediaLoader');
+    const bar = document.getElementById('loadBar');
+    const pct = document.getElementById('loadPercent');
+    if (loaderTimer) {
+        clearTimeout(loaderTimer);
+        loaderTimer = null;
+    }
+    if (!loaderVisible) {
+        // 加载很快，直接返回
+        return;
+    }
+    if (bar) bar.style.width = '100%';
+    if (pct) pct.innerText = '100%';
+    setTimeout(() => {
+        if (loader) loader.classList.remove('active');
+        loaderVisible = false;
+    }, 120);
 }
 
 function updateThumbnailActive(index) {

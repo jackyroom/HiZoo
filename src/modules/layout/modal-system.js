@@ -159,6 +159,13 @@ export function initModalKeyboard() {
 }
 
 export function navigateMedia(direction) {
+    // 防止短时间内重复触发导致跳两张
+    const now = Date.now();
+    if (navigateMedia._last && now - navigateMedia._last < 180) {
+        return;
+    }
+    navigateMedia._last = now;
+
     const activeItem = uiStore.getActiveItem();
     if (!activeItem || !activeItem.sources) return;
     if (activeItem.type === 'article') return;

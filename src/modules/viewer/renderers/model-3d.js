@@ -2,7 +2,7 @@
 
 let currentModelViewer = null;
 
-export function render3DModel(container, item) {
+export function render3DModel(container, item, onLoaded) {
     container.innerHTML = '';
 
     const modelUrl = item.sources && item.sources.length > 0 ? item.sources[0] : null;
@@ -45,6 +45,12 @@ export function render3DModel(container, item) {
         modelViewer.style.height = '100%';
         modelViewer.style.background = 'radial-gradient(circle at center, #1a1a2e 0%, #0a0a15 100%)';
 
+        modelViewer.addEventListener('load', () => {
+            if (onLoaded) onLoaded();
+        });
+        modelViewer.addEventListener('error', () => {
+            if (onLoaded) onLoaded();
+        });
         container.appendChild(modelViewer);
         currentModelViewer = modelViewer;
     } else {
@@ -70,6 +76,7 @@ export function render3DModel(container, item) {
         `;
         container.appendChild(wrapper);
         currentModelViewer = null;
+        if (onLoaded) onLoaded();
         return;
     }
 
