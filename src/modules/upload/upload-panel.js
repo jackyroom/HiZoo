@@ -27,6 +27,9 @@ export function openUploadPanel() {
     const upTitle = document.getElementById('upTitle');
     const upDesc = document.getElementById('upDesc');
     const upTags = document.getElementById('upTags');
+    const upLink1 = document.getElementById('upLink1');
+    const upLink2 = document.getElementById('upLink2');
+    const upLink3 = document.getElementById('upLink3');
     const fileList = document.getElementById('fileList');
     const preImg = document.getElementById('preImg');
     const coverDrop = document.getElementById('coverDrop');
@@ -34,6 +37,9 @@ export function openUploadPanel() {
     if (upTitle) upTitle.value = '';
     if (upDesc) upDesc.value = '';
     if (upTags) upTags.value = '';
+    if (upLink1) upLink1.value = '';
+    if (upLink2) upLink2.value = '';
+    if (upLink3) upLink3.value = '';
     if (fileList) fileList.innerHTML = '<div style="text-align:center; color:#444; padding:20px; font-size:10px;">未选择文件</div>';
     if (preImg) preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=%E6%9A%82%E6%97%A0%E9%A2%84%E8%A7%88';
     
@@ -70,9 +76,15 @@ export function closeUploadPanel() {
     const upTitle = document.getElementById('upTitle');
     const upDesc = document.getElementById('upDesc');
     const upTags = document.getElementById('upTags');
+    const upLink1 = document.getElementById('upLink1');
+    const upLink2 = document.getElementById('upLink2');
+    const upLink3 = document.getElementById('upLink3');
     if (upTitle) upTitle.value = '';
     if (upDesc) upDesc.value = '';
     if (upTags) upTags.value = '';
+    if (upLink1) upLink1.value = '';
+    if (upLink2) upLink2.value = '';
+    if (upLink3) upLink3.value = '';
     
     // Clear preview
     updatePreview();
@@ -127,7 +139,7 @@ export function bindUploadPanel(structure) {
     const closeBtn = upHeader ? upHeader.querySelector('span[onclick*="closeUploadPanel"]') : null;
     const cancelBtn = Array.from(document.querySelectorAll('.cyber-btn'))
         .find(btn => btn.textContent && btn.textContent.includes('取消'));
-    const submitBtn = Array.from(document.querySelectorAll('.cyber-btn'))
+    const submitBtn = document.getElementById('uploadSubmitBtn') || Array.from(document.querySelectorAll('.cyber-btn'))
         .find(btn => btn.textContent && btn.textContent.includes('上传'));
     const coverDrop = document.getElementById('coverDrop');
     const coverInput = document.getElementById('coverInput');
@@ -139,7 +151,7 @@ export function bindUploadPanel(structure) {
     if (closeBtn) closeBtn.addEventListener('click', closeUploadPanel);
     if (cancelBtn) cancelBtn.addEventListener('click', closeUploadPanel);
     if (submitBtn) submitBtn.addEventListener('click', () => {
-        submitUpload(structure, (newItem, category, sub) => {
+            submitUpload(structure, (newItem, category, sub) => {
             // Success callback - emit event for navigation
             if (window.eventBus) {
                 window.eventBus.emit('UPLOAD_SUCCESS', { 
@@ -176,12 +188,12 @@ export function bindUploadPanel(structure) {
     });
     
     if (coverDrop && coverInput) {
-        coverDrop.addEventListener('click', () => coverInput.click());
-        coverInput.addEventListener('change', (e) => {
+        coverDrop.onclick = () => coverInput.click();
+        coverInput.onchange = (e) => {
             handleCoverSelect(e.target, () => {
                 updatePreview(structure);
             });
-        });
+        };
     }
     
         if (coverRemove) {
@@ -192,35 +204,35 @@ export function bindUploadPanel(structure) {
         }
     
     if (fileDrop && fileInput) {
-        fileDrop.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
+        fileDrop.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
             handleFileSelect(e.target, () => {
-                renderFileList();
+                renderFileList(structure);
                 updatePreview(structure);
             });
-        });
+        };
         
         // Drag and drop
-        fileDrop.addEventListener('dragover', (e) => {
+        fileDrop.ondragover = (e) => {
             e.preventDefault();
             fileDrop.style.borderColor = 'var(--accent)';
-        });
+        };
         
-        fileDrop.addEventListener('dragleave', () => {
+        fileDrop.ondragleave = () => {
             fileDrop.style.borderColor = '';
-        });
+        };
         
-        fileDrop.addEventListener('drop', (e) => {
+        fileDrop.ondrop = (e) => {
             e.preventDefault();
             fileDrop.style.borderColor = '';
             if (e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
                 handleFileSelect(fileInput, () => {
-                    renderFileList();
+                    renderFileList(structure);
                     updatePreview(structure);
                 });
             }
-        });
+        };
     }
 }
 

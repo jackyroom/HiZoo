@@ -2,6 +2,7 @@ import sys
 import os
 from pathlib import Path
 import re
+import argparse
 
 # 设置编码，确保中文输出正常
 if hasattr(sys.stdout, 'reconfigure'):
@@ -10,7 +11,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 # ===============================================
 # 配置
 # ===============================================
-NOTION_IMAGES_FOLDER = "notion_images"  # notion_images 文件夹路径
+NOTION_IMAGES_FOLDER = "notion_images"  # 默认 notion_images 文件夹路径
 VERBOSE = True  # 是否显示详细输出
 
 # 支持的图片扩展名
@@ -117,16 +118,52 @@ def rename_images_in_folder(folder_path, folder_name):
     return renamed_count, len(image_files) - len(files_to_rename)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Notion 图片重命名工具")
+    parser.add_argument(
+        "--target",
+        type=str,
+        help="指定要处理的目标文件夹；若不指定则遍历默认 notion_images 下的所有子文件夹",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="显示详细输出",
+    )
+    return parser.parse_args()
+
+
 def main():
-    """主函数：批量重命名 notion_images 文件夹下的所有图片"""
+    """主函数：重命名指定文件夹（或默认的 notion_images）中的图片"""
+    args = parse_args()
+    global VERBOSE
+    if args.verbose:
+        VERBOSE = True
+
+    script_dir = Path(__file__).resolve().parent
+
+    if args.target:
+        target_path = Path(args.target).resolve()
+        if not target_path.exists():
+            print(f"❌ 文件夹不存在: {target_path}")
+            return
+
+        print("=" * 60)
+        print("📝 Notion 图片重命名工具")
+        print(f"目标文件夹: {target_path}")
+        print("=" * 60)
+
+        renamed, skipped = rename_images_in_folder(str(target_path), target_path.name)
+        print("\n" + "=" * 60)
+        print(f"🎉 处理完成！重命名 {renamed} 个，跳过 {skipped} 个")
+        print("=" * 60)
+        return
+
+    notion_images_path = script_dir / NOTION_IMAGES_FOLDER
     print("=" * 60)
     print("📝 Notion 图片重命名工具")
-    print(f"目标文件夹: {NOTION_IMAGES_FOLDER}")
+    print(f"目标文件夹: {notion_images_path}")
     print("=" * 60)
-
-    # 使用脚本所在目录作为基准路径，而不是当前工作目录
-    script_dir = Path(__file__).resolve().parent
-    notion_images_path = script_dir / NOTION_IMAGES_FOLDER
     
     if not notion_images_path.exists():
         print(f"❌ 文件夹不存在: {notion_images_path}")

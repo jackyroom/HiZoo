@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from io import BytesIO
 from PIL import Image
+import argparse
 
 # 设置编码，确保中文输出正常
 if hasattr(sys.stdout, 'reconfigure'):
@@ -129,6 +130,10 @@ def should_skip_compression(input_path, output_path):
     
     返回: (是否跳过, 原因)
     """
+    # 输入输出相同路径时强制处理
+    if os.path.abspath(input_path) == os.path.abspath(output_path):
+        return (False, None)
+
     # 如果输出文件不存在，需要压缩
     if not os.path.exists(output_path):
         return (False, None)
@@ -224,33 +229,60 @@ def process_folder(input_folder, output_folder):
     return processed_count, success_count, skipped_count, total_original_size, total_compressed_size
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Notion 图片压缩工具")
+    parser.add_argument(
+        "--input",
+        type=str,
+        help="输入文件夹，默认使用脚本目录下的 notion_images",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="输出文件夹，默认使用脚本目录下的 notion_images_compressed",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="显示详细日志",
+    )
+    return parser.parse_args()
+
+
 def main():
     """
-    主函数：批量压缩 notion_images 文件夹下的所有图片
-    压缩后的图片保存到新文件夹，不覆盖原始文件
+    主函数：批量压缩图片，支持自定义输入/输出目录
+    压缩后的图片保存到输出目录
     """
+    args = parse_args()
+    global VERBOSE
+    if args.verbose:
+        VERBOSE = True
+
+    input_dir = Path(args.input).resolve() if args.input else IMAGE_FOLDER
+    output_dir = Path(args.output).resolve() if args.output else OUTPUT_FOLDER
+
     print("=" * 60)
     print("🗜️  Notion 图片批量压缩工具")
     print("=" * 60)
-    print(f"原始文件夹: {IMAGE_FOLDER}")
-    print(f"输出文件夹: {OUTPUT_FOLDER}")
+    print(f"原始文件夹: {input_dir}")
+    print(f"输出文件夹: {output_dir}")
     print(f"目标文件大小: ≤ {TARGET_SIZE_KB}KB")
     print(f"输出格式: JPG")
     print(f"最大尺寸: {MAX_DIMENSION}px")
     print("=" * 60)
     
-    if not os.path.exists(IMAGE_FOLDER):
-        print(f"❌ 错误：文件夹 '{IMAGE_FOLDER}' 不存在！")
+    if not os.path.exists(input_dir):
+        print(f"❌ 错误：文件夹 '{input_dir}' 不存在！")
         return
     
-    # 输出文件夹已存在是正常的，脚本会自动跳过已压缩的文件
-    if os.path.exists(OUTPUT_FOLDER):
+    if os.path.exists(output_dir):
         print(f"\nℹ️  输出文件夹已存在，将自动跳过已压缩的图片")
     
     print("\n--- 开始处理图片 ---")
-    print("💡 提示：原始文件不会被修改，压缩后的图片将保存到新文件夹")
+    print("💡 提示：原始文件不会被修改，压缩后的图片将保存到输出文件夹")
     print("💡 提示：已压缩的图片会自动跳过，只处理新增或更新的图片")
-    processed, success, skipped, total_orig, total_comp = process_folder(IMAGE_FOLDER, OUTPUT_FOLDER)
+    processed, success, skipped, total_orig, total_comp = process_folder(str(input_dir), str(output_dir))
     
     print("\n" + "=" * 60)
     print("🎉 批量压缩完成！")

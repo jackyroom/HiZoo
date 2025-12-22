@@ -4,6 +4,8 @@ import { assetsStore } from '../store/assets.store.js';
 
 let uploadedFiles = [];
 let uploadedCover = null;
+let uploadedCoverFile = null;
+let coverIsManual = false;
 
 export function getUploadedFiles() {
     return uploadedFiles;
@@ -17,6 +19,10 @@ export function getUploadedCover() {
     return uploadedCover;
 }
 
+export function getUploadedCoverFile() {
+    return uploadedCoverFile;
+}
+
 export function setUploadedCover(cover) {
     uploadedCover = cover;
 }
@@ -24,6 +30,8 @@ export function setUploadedCover(cover) {
 export function clearUpload() {
     uploadedFiles = [];
     uploadedCover = null;
+    uploadedCoverFile = null;
+    coverIsManual = false;
 }
 
 export function handleFileSelect(input, onUpdate) {
@@ -37,6 +45,8 @@ export function handleFileSelect(input, onUpdate) {
     if (!uploadedCover) {
         const firstImg = uploadedFiles.find(f => f.type.startsWith('image/'));
         if (firstImg) {
+            uploadedCoverFile = firstImg;
+            coverIsManual = false;
             const reader = new FileReader();
             reader.onload = (e) => {
                 if (!uploadedCover) {
@@ -55,6 +65,8 @@ export function handleCoverSelect(input, onUpdate) {
     const file = input.files[0];
     if (!file) return;
 
+    uploadedCoverFile = file;
+    coverIsManual = true;
     const reader = new FileReader();
     reader.onload = (e) => {
         uploadedCover = e.target.result;
@@ -82,6 +94,10 @@ export function handleCoverSelect(input, onUpdate) {
 
 export function removeFile(index, onUpdate) {
     uploadedFiles.splice(index, 1);
+    if (uploadedFiles.length === 0 && !coverIsManual) {
+        uploadedCover = null;
+        uploadedCoverFile = null;
+    }
     if (onUpdate) onUpdate();
 }
 
@@ -129,6 +145,11 @@ export function detectFileType(fileName, fileType) {
 }
 
 export function submitUpload(structure, onSuccess) {
+    if (!window || !window.fetch) {
+        alert(">> ERROR: FETCH NOT AVAILABLE");
+        return;
+    }
+
     if (uploadedFiles.length === 0) {
         alert(">> ACCESS DENIED: NO PAYLOAD DETECTED");
         return;
@@ -139,6 +160,9 @@ export function submitUpload(structure, onSuccess) {
     const subIdx = document.getElementById('upSub')?.value;
     const userTags = document.getElementById('upTags')?.value.split(',').filter(t => t.trim() !== '') || [];
     const userDesc = document.getElementById('upDesc')?.value || '';
+    const link1 = document.getElementById('upLink1')?.value || '';
+    const link2 = document.getElementById('upLink2')?.value || '';
+    const link3 = document.getElementById('upLink3')?.value || '';
 
     if (!catVal || !structure[catVal[0]]?.children?.[catVal[1]]) {
         alert(">> ERROR: INVALID CATEGORY");
@@ -148,65 +172,94 @@ export function submitUpload(structure, onSuccess) {
     const category = structure[catVal[0]].children[catVal[1]];
     const sub = category.subs[subIdx];
 
-    // Create blob URLs for all files
-    const blobSources = uploadedFiles.map(file => URL.createObjectURL(file));
+    const coverFile = uploadedCoverFile || uploadedFiles.find(f => f.type.startsWith('image/')) || uploadedFiles[0];
 
-    // Determine primary type
-    const firstFile = uploadedFiles[0];
-    const type = detectFileType(firstFile.name, firstFile.type);
+    const formData = new FormData();
+    formData.append('title', customTitle);
+    formData.append('categoryName', category.name);
+    formData.append('categoryId', category.id);
+    formData.append('subCategory', sub?.name || '');
+    formData.append('subCategory2', '');
+    formData.append('tags', userTags.join(','));
+    formData.append('description', userDesc);
+    formData.append('link1', link1);
+    formData.append('link2', link2);
+    formData.append('link3', link3);
 
-    // Calculate total size
-    const totalSize = uploadedFiles.reduce((acc, f) => acc + f.size, 0);
-
-    // Generate thumbnail
-    let thumbnail = uploadedCover || blobSources[0];
-    if (type === 'model') {
-        thumbnail = 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop&q=80';
-    } else if (type === 'pdf') {
-        thumbnail = 'https://placehold.co/400x300/1a1a1a/FFF?text=PDF+DOC';
-    } else if (type === 'txt') {
-        thumbnail = 'https://placehold.co/400x300/000/00f3ff?text=TXT+LOG&font=monospace';
-    } else if (type === 'audio') {
-        thumbnail = 'https://placehold.co/400x300/101015/ff0055?text=AUDIO+WAVE&font=monospace';
+    uploadedFiles.forEach((file) => {
+        formData.append('files', file, file.name);
+    });
+    if (coverFile) {
+        formData.append('cover', coverFile, coverFile.name);
     }
 
-    // Create new asset
-    const newItem = {
-        title: customTitle,
-        type: type,
-        thumbnail: thumbnail,
-        sources: blobSources,
-        tag: userTags.length > 0 ? userTags[0].trim().toUpperCase() : 'NEW',
-        size: (totalSize / 1024 / 1024).toFixed(1) + ' MB',
-        ver: 'v.1.0',
-        description: userDesc,
-        originalFileName: firstFile.name
-    };
+    fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+    })
+        .then(async (resp) => {
+            if (!resp.ok) {
+                const msg = await resp.text();
+                throw new Error(msg || 'UPLOAD_FAILED');
+            }
+            return resp.json();
+        })
+        .then((data) => {
+            if (!data?.success) {
+                throw new Error(data?.message || 'UPLOAD_FAILED');
+            }
 
-    // Store uploaded item using assetsStore
-    assetsStore.addUploadedItem(category.id, sub.id, newItem);
+            const attrs = data.card?.attributes || {};
+            const gallery = attrs.gallery || [];
+            const thumb = attrs.thumbnail || attrs.cover || uploadedCover || '';
+            const item = {
+                id: data.card?.id,
+                title: data.card?.title || customTitle,
+                type: attrs.type || detectFileType(uploadedFiles[0].name, uploadedFiles[0].type),
+                thumbnail: thumb,
+                gallery,
+                sources: gallery.length ? [thumb, ...gallery].filter(Boolean) : [thumb].filter(Boolean),
+                tag: attrs.tags?.[0] || (userTags[0] ? userTags[0].trim() : 'NEW'),
+                tags: attrs.tags || userTags,
+                size: attrs.size || (uploadedFiles.reduce((acc, f) => acc + f.size, 0) / 1024 / 1024).toFixed(1) + ' MB',
+                ver: 'v.1.0',
+                description: userDesc,
+                downloads: attrs.downloads || []
+            };
 
-    // Clear upload form
-    clearUpload();
-    const uploadPanel = document.getElementById('uploadPanel');
-    if (uploadPanel) uploadPanel.classList.remove('active');
+            assetsStore.addUploadedItem(category.id, sub.id, item);
 
-    // Reset form
-    const upTitle = document.getElementById('upTitle');
-    const upDesc = document.getElementById('upDesc');
-    const upTags = document.getElementById('upTags');
-    if (upTitle) upTitle.value = '';
-    if (upDesc) upDesc.value = '';
-    if (upTags) upTags.value = '';
+            clearUpload();
+            const uploadPanel = document.getElementById('uploadPanel');
+            if (uploadPanel) uploadPanel.classList.remove('active');
 
-    if (onSuccess) {
-        onSuccess(newItem, category, sub);
-    }
+            const upTitle = document.getElementById('upTitle');
+            const upDesc = document.getElementById('upDesc');
+            const upTags = document.getElementById('upTags');
+            const upLink1 = document.getElementById('upLink1');
+            const upLink2 = document.getElementById('upLink2');
+            const upLink3 = document.getElementById('upLink3');
+            if (upTitle) upTitle.value = '';
+            if (upDesc) upDesc.value = '';
+            if (upTags) upTags.value = '';
+            if (upLink1) upLink1.value = '';
+            if (upLink2) upLink2.value = '';
+            if (upLink3) upLink3.value = '';
 
-    // Emit event
-    if (window.eventBus) {
-        window.eventBus.emit('UPLOAD_SUCCESS', { item: newItem, category, sub });
-    }
+            if (onSuccess) {
+                onSuccess(item, category, sub);
+            }
+
+            if (window.eventBus) {
+                window.eventBus.emit('UPLOAD_SUCCESS', { item, category, sub });
+            }
+
+            alert('>> 上传完成，已写入 CSV 并存储资源');
+        })
+        .catch((err) => {
+            console.error(err);
+            alert(`>> ERROR: ${err.message || err}`);
+        });
 }
 
 

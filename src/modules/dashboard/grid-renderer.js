@@ -5,7 +5,7 @@ import { assetsStore } from '../../store/assets.store.js';
 export function renderGrid(data) {
     const grid = document.getElementById('grid');
     if (!grid) return;
-    
+
     if (!data || data.length === 0) {
         grid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align:center; padding:60px 20px; color:#666;">
@@ -16,7 +16,7 @@ export function renderGrid(data) {
         `;
         return;
     }
-    
+
     grid.innerHTML = '';
     data.forEach((item, index) => {
         const card = document.createElement('div');
@@ -24,7 +24,7 @@ export function renderGrid(data) {
         card.style.animation = `slideDown 0.4s ease-out ${index * 0.05}s backwards`;
         card.draggable = true;
         card.dataset.index = String(index);
-        
+
         let typeBadge = (item.type || 'FILE').toUpperCase();
         if (item.type === 'gallery' && item.sources && item.sources.length > 0) {
             typeBadge = 'GALLERY (' + item.sources.length + ')';
@@ -45,7 +45,7 @@ export function renderGrid(data) {
                 <div class="card-footer"><div>大小<span class="stat-val">${item.size}</span></div><div>版本<span class="stat-val">${item.ver}</span></div></div>
             </div>
         `;
-        
+
         // 绑定点击事件
         card.addEventListener('click', () => {
             if (window.eventBus) {
@@ -69,7 +69,7 @@ export function renderGrid(data) {
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.dropEffect = 'move';
             e.dataTransfer.setData('text/plain', String(index));
-            
+
             // 创建自定义拖拽图像，缩小尺寸避免触发浏览器默认行为
             const dragImage = card.cloneNode(true);
             dragImage.style.position = 'absolute';
@@ -85,14 +85,14 @@ export function renderGrid(data) {
             document.body.appendChild(dragImage);
             // 调整拖拽图像的偏移，使其居中显示
             e.dataTransfer.setDragImage(dragImage, e.offsetX * 0.5, e.offsetY * 0.5);
-            
+
             // 延迟移除拖拽图像
             setTimeout(() => {
                 if (dragImage.parentNode) {
                     dragImage.parentNode.removeChild(dragImage);
                 }
             }, 0);
-            
+
             window.__hizooDraggedAsset = {
                 item,
                 fromIndex: index
@@ -135,7 +135,7 @@ export function renderGrid(data) {
                 renderGrid(newAssets);
             }
         });
-        
+
         grid.appendChild(card);
     });
 }

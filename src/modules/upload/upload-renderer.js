@@ -1,8 +1,10 @@
 // 上传渲染器：文件列表和预览渲染
 
-import { getUploadedFiles, getUploadedCover } from '../../services/upload-handler.js';
+import { getUploadedFiles, getUploadedCover, removeFile } from '../../services/upload-handler.js';
 
-export function renderFileList() {
+let previewBlobUrl = null;
+
+export function renderFileList(structure) {
     const list = document.getElementById('fileList');
     if (!list) return;
     
@@ -30,8 +32,8 @@ export function renderFileList() {
         removeBtn.style.cssText = "cursor:pointer; color:var(--c-alert); font-size:14px; margin-left:10px;";
         removeBtn.addEventListener('click', () => {
             removeFile(idx, () => {
-                renderFileList();
-                // updatePreview will be called with structure from the caller
+                renderFileList(structure);
+                updatePreview(structure);
             });
         });
         item.appendChild(removeBtn);
@@ -89,10 +91,37 @@ export function updatePreview(structure) {
     // Update cover preview
     const preImg = document.getElementById('preImg');
     if (preImg) {
+        const isImage = (file) => {
+            if (!file) return false;
+            if (file.type && file.type.startsWith('image/')) return true;
+            return /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name || '');
+        };
+
         if (cover) {
+            if (previewBlobUrl) {
+                URL.revokeObjectURL(previewBlobUrl);
+                previewBlobUrl = null;
+            }
             preImg.src = cover;
         } else if (files.length === 0) {
+            if (previewBlobUrl) {
+                URL.revokeObjectURL(previewBlobUrl);
+                previewBlobUrl = null;
+            }
             preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=%E6%9A%82%E6%97%A0%E9%A2%84%E8%A7%88';
+        } else {
+            const firstImage = files.find(isImage) || files[0];
+            if (!firstImage) {
+                if (previewBlobUrl) {
+                    URL.revokeObjectURL(previewBlobUrl);
+                    previewBlobUrl = null;
+                }
+                preImg.src = 'https://placehold.co/600x400/000/00f3ff?text=%E6%97%A0%E5%9B%BE%E7%89%87%E9%A2%84%E8%A7%88';
+            } else {
+                if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+                previewBlobUrl = URL.createObjectURL(firstImage);
+                preImg.src = previewBlobUrl;
+            }
         }
     }
 }

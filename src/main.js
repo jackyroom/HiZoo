@@ -19,6 +19,7 @@ import { handlePublish } from './modules/editor/editor-publish.js';
 import { initTableResize, attachTableClickHandlers, initTableHandlers, tableAddRow, tableAddCol, tableDeleteRow, tableDeleteCol, tableDeleteTable, applyTableRowHeight, applyTableColWidth, setTableCellAlign, applyTableCellColor, showTableToolbar, hideTableToolbar, showTableContextMenu, hideTableContextMenu } from './modules/editor/editor-table.js';
 import { initResizer, activateResizer, hideResizer, deleteSelectedMedia, setMediaAlign, getActiveMedia } from './modules/editor/editor-media.js';
 import { openUploadPanel, closeUploadPanel, bindUploadPanel } from './modules/upload/upload-panel.js';
+import { openManagePanel, closeManagePanel, bindManagePanel } from './modules/upload/manage-panel.js';
 import { submitUpload as submitUploadHandler } from './services/upload-handler.js';
 import { toggleNeuralMode, initGraphData, renderGraph, updateGraphSettings, updateGraphBg, initGraphFilters, initParticles, toggleParticles } from './modules/neural-graph/graph-core.js';
 import { taxonomyStore } from './store/index.js';
@@ -45,6 +46,7 @@ let structure = [];
 function bindHeaderActions() {
     const logo = document.getElementById('logoBtn');
     const uploadBtn = document.querySelector('.user-profile-box[title="上传资源"]');
+    const manageBtn = document.querySelector('.user-profile-box[title="资源管理"]');
     const editorBtn = document.querySelector('.user-profile-box[title="撰写文章"]');
     if (logo) logo.addEventListener('click', (e) => {
         e.preventDefault();
@@ -54,6 +56,10 @@ function bindHeaderActions() {
         e.preventDefault();
         openUploadPanel();
     });
+    if (manageBtn) manageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openManagePanel();
+    });
     if (editorBtn) editorBtn.addEventListener('click', (e) => {
         e.preventDefault();
         openEditor(structure);
@@ -62,6 +68,7 @@ function bindHeaderActions() {
 
 function bindUploadPanelWrapper() {
     bindUploadPanel(structure);
+    bindManagePanel(structure);
 }
 
 function bindEditorPanel() {
@@ -285,6 +292,8 @@ async function bootstrap() {
         window.navigateMedia = navigateMedia;
         window.closeUploadPanel = closeUploadPanel;
         window.openUploadPanel = openUploadPanel;
+        window.openManagePanel = openManagePanel;
+        window.closeManagePanel = closeManagePanel;
         window.openEditor = () => openEditor(structure);
         window.closeEditor = closeEditor;
         window.execCmd = execCmd;
